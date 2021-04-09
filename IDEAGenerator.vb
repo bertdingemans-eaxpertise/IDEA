@@ -10,7 +10,6 @@ Imports System.IO
 ''' the sample repository there are differences in implementation.
 ''' </summary>
 Public Class IDEAGenerator
-
     Private _Repository As EA.Repository
 
     Public Property Repository() As EA.Repository
@@ -21,6 +20,13 @@ Public Class IDEAGenerator
             _Repository = value
         End Set
     End Property
+    ''' <summary>
+    ''' create a connector in the EA repository
+    ''' </summary>
+    ''' <param name="Source">Source object</param>
+    ''' <param name="Target">Target Object</param>
+    ''' <param name="Type">Type of connector</param>
+    ''' <returns></returns>
     Public Function CreateConnector(ByVal Source As EA.Element, ByVal Target As EA.Element, ByVal Type As String) As Boolean
         Dim objCon As EA.Connector
         objCon = Source.Connectors.AddNew(Type, Type)
@@ -31,7 +37,12 @@ Public Class IDEAGenerator
         Source.Update()
         Return True
     End Function
-    Public Function CopyClass2UI(ByVal objEle As EA.Element) As Integer
+    ''' <summary>
+    ''' Create a sample UI of a Class element
+    ''' </summary>
+    ''' <param name="objEle"></param>
+    ''' <returns></returns>
+    Public Function CopyClass2UI(ByVal objEle As EA.Element, Package_id As String, AttributeConnector As Boolean) As Integer
 
         Dim objNewDiagram As EA.Diagram
         Dim objDON As EA.DiagramObject
@@ -42,24 +53,29 @@ Public Class IDEAGenerator
         Dim intX As Int32
         Dim intY As Int32
         Dim intLen As Int32
+        Dim intHeight As Int32
+
         Dim strControl As String
 
-        objPack = Me.Repository.GetPackageByID(objEle.PackageID)
+        objPack = Me.Repository.GetPackageByID(Convert.ToInt32(Package_id))
         objNewDiagram = objPack.Diagrams.AddNew(objEle.Name & " User Interface", "simpleUI")
         objNewDiagram.Update()
-        objDON = objNewDiagram.DiagramObjects.AddNew("", "")
-        objDON.ElementID = objEle.ElementID
-        objDON.top = -20
-        objDON.bottom = -200
-        objDON.left = 700
-        objDON.right = 900
-        objDON.ShowNotes = False
-        objDON.Update()
+        If AttributeConnector Then
+            objDON = objNewDiagram.DiagramObjects.AddNew("", "")
+            objDON.ElementID = objEle.ElementID
+            objDON.top = -20
+            objDON.bottom = -200
+            objDON.left = 700
+            objDON.right = 900
+            objDON.ShowNotes = False
+            objDON.Update()
+        End If
 
         intX = 200
         intY = -20
         For Each objAttribute In objEle.Attributes
             intLen = 400
+            intHeight = 25
             If Mid(objAttribute.Type, 1, 6) = "Lookup" Then
                 strControl = "simpleCombobox"
             ElseIf objAttribute.Type = "Date" Then
@@ -71,10 +87,13 @@ Public Class IDEAGenerator
             ElseIf objAttribute.Type = "Boolean" Then
                 strControl = "simpleCheckBox"
                 intLen = 200
+            ElseIf objAttribute.Type = "Memo" Then
+                strControl = "simpleEdit"
+                intHeight = 100
             Else
                 strControl = "simpleEdit"
             End If
-            Dim strLabel
+            Dim strLabel As String
             strLabel = Replace(objAttribute.Name, "_", " ")
             strLabel = Replace(strLabel, " id", "")
             objGUI = objPack.Elements.AddNew(objAttribute.Name, strControl)
@@ -89,19 +108,20 @@ Public Class IDEAGenerator
 
             objPack.Elements.Refresh()
             objPack.Update()
-
-            Dim objCon As EA.Connector
-            objCon = objEle.Connectors.AddNew(objAttribute.Name, "")
-            objCon.SupplierID = objEle.ElementID
-            objCon.ClientID = objGUI.ElementID
-            objCon.Direction = "Destination to Source"
-            objCon.StyleEx = "LFEP=" & objAttribute.AttributeGUID & "L;"
-            objCon.Update()
+            If AttributeConnector Then
+                Dim objCon As EA.Connector
+                objCon = objEle.Connectors.AddNew(objAttribute.Name, "")
+                objCon.SupplierID = objEle.ElementID
+                objCon.ClientID = objGUI.ElementID
+                objCon.Direction = "Destination to Source"
+                objCon.StyleEx = "LFEP=" & objAttribute.AttributeGUID & "L;"
+                objCon.Update()
+            End If
 
             objDON = objNewDiagram.DiagramObjects.AddNew("", "")
             objDON.ElementID = objGUI.ElementID
             objDON.top = intY
-            objDON.bottom = (intY - 25)
+            objDON.bottom = (intY - intHeight)
             objDON.left = 155
             objDON.right = 155 + intLen
             objDON.Update()
@@ -109,18 +129,24 @@ Public Class IDEAGenerator
             objDON = objNewDiagram.DiagramObjects.AddNew("", "")
             objDON.ElementID = objLabel.ElementID
             objDON.top = intY
-            objDON.bottom = (intY - 25)
+            objDON.bottom = (intY - intHeight)
             objDON.left = 20
             objDON.right = 150
-            intY = intY - 30
+            intY = intY - (intHeight + 5)
             objDON.Update()
-
             objNewDiagram.DiagramObjects.Refresh()
             objNewDiagram.Update()
         Next
-
         Return objNewDiagram.DiagramID
     End Function
+
+    ''' <summary>
+    ''' Refactor an asssociation and move it together with an attribute to a new class
+    ''' </summary>
+    ''' <param name="oldElement"></param>
+    ''' <param name="newElement"></param>
+    ''' <param name="AttributeID"></param>
+    ''' <returns></returns>
     Public Function RefactorAssociation(ByVal oldElement As EA.Element, ByVal newElement As EA.Element, ByVal AttributeID As String) As Boolean
         Dim oConnector As EA.Connector
         Dim oAttribute As EA.Attribute
@@ -273,9 +299,29 @@ Public Class IDEAGenerator
 
     '    Return objNewConnector.ConnectorID
     'End Function
+
+    ''' <summary>
+    ''' Copy an attribute from one class to antother
+    ''' </summary>
+    ''' <param name="objSource"></param>
+    ''' <param name="objTarget"></param>
+    ''' <param name="strType"></param>
+    ''' <param name="strAttributeId"></param>
+    ''' <param name="blnCreateAssociation"></param>
+    ''' <returns></returns>
     Public Function CopyAttribute(ByVal objSource As EA.Element, ByVal objTarget As EA.Element, ByVal strType As String, ByVal strAttributeId As String, ByVal blnCreateAssociation As Boolean) As EA.Attribute
         Return CopyAttribute(objSource, objTarget, strType, strAttributeId, blnCreateAssociation, "Destination -> Source")
     End Function
+    ''' <summary>
+    ''' Copy an attribute from one class to antother
+    ''' </summary>
+    ''' <param name="objSource"></param>
+    ''' <param name="objTarget"></param>
+    ''' <param name="strType"></param>
+    ''' <param name="strAttributeId"></param>
+    ''' <param name="blnCreateAssociation"></param>
+    ''' <param name="strDirection"></param>
+    ''' <returns></returns>
     Public Function CopyAttribute(ByVal objSource As EA.Element, ByVal objTarget As EA.Element, ByVal strType As String, ByVal strAttributeId As String, ByVal blnCreateAssociation As Boolean, ByVal strDirection As String) As EA.Attribute
 
         Dim objAttribute As EA.Attribute
@@ -321,6 +367,12 @@ Public Class IDEAGenerator
         End If
         Return objColumn
     End Function
+
+    ''' <summary>
+    ''' Create a connector (mapping for an attribute
+    ''' </summary>
+    ''' <param name="objSource"></param>
+    ''' <param name="objTarget"></param>
     Public Sub CreateConnectorForAttribute(ByVal objSource As EA.Attribute, ByVal objTarget As EA.Attribute)
         Me.CreateConnectorForAttribute(objSource, objTarget, "Source -> Destination", True, "")
     End Sub
@@ -339,8 +391,17 @@ Public Class IDEAGenerator
             DLAFormfactory.DLA2EAHelper.Error2Log(ex)
         End Try
     End Sub
-    Public Sub CreateConnectorForAttribute(ByVal objSource As EA.Attribute, ByVal objTarget As EA.Attribute, ByVal strDirection As String, ByVal blnName As Boolean, ByVal strStereotype As String, Optional ByVal linestyle As EA.LinkLineStyle = EA.LinkLineStyle.LineStyleDirect)
 
+    ''' <summary>
+    ''' Create a connector (mapping for an attribute
+    ''' </summary>
+    ''' <param name="objSource"></param>
+    ''' <param name="objTarget"></param>
+    ''' <param name="strDirection"></param>
+    ''' <param name="blnName"></param>
+    ''' <param name="strStereotype"></param>
+    ''' <param name="linestyle"></param>
+    Public Sub CreateConnectorForAttribute(ByVal objSource As EA.Attribute, ByVal objTarget As EA.Attribute, ByVal strDirection As String, ByVal blnName As Boolean, ByVal strStereotype As String, Optional ByVal linestyle As EA.LinkLineStyle = EA.LinkLineStyle.LineStyleDirect)
         Dim objCon As EA.Connector
         Dim objEle As EA.Element
         Dim strNaam As String = ""
@@ -361,7 +422,14 @@ Public Class IDEAGenerator
         objCon.Update()
 
     End Sub
-
+    ''' <summary>
+    ''' Routine for creating columns in a PDM from a class attribute in a LDM
+    ''' </summary>
+    ''' <param name="objAttribute"></param>
+    ''' <param name="objTargetAttribute"></param>
+    ''' <param name="objSource"></param>
+    ''' <param name="objTarget"></param>
+    ''' <returns></returns>
     Private Shared Function Attribute2Column(ByVal objAttribute As EA.Attribute, objTargetAttribute As EA.Attribute, ByVal objSource As EA.Element, ByVal objTarget As EA.Element) As String
         Dim strRet As String = "Variant"
         Dim intTeller As Int16
@@ -419,37 +487,43 @@ Public Class IDEAGenerator
         Select Case strType.ToUpper()
             Case "INTERFACE"
                 objNew = objPack.Elements.AddNew(strName, "Interface")
-                objNew.Notes = "Copy from class to interface by script"
+                '               objNew.Notes = 
                 objNew.Gentype = "VBNet"
-                objNew.Update()
-                objPack.Update()
             Case "CLASS"
                 objNew = objPack.Elements.AddNew(strName, "Class")
-                objNew.Notes = "Copy from table to class by script"
+                '              objNew.Notes = "Copy from table to class by script"
                 objNew.Gentype = "VBNet"
             Case "XSD"
                 objNew = objPack.Elements.AddNew(strName, "EAUML::table")
-                objNew.Notes = "Copy from class to table by script"
+                '                objNew.Notes = "Copy from class to table by script"
                 objNew.Gentype = "SQL Server 2012"
                 objNew.Type = "Class"
                 objNew.Stereotype = "XSDcomplexType"
             Case "TABLE"
                 objNew = objPack.Elements.AddNew(strName, "EAUML::table")
-                objNew.Notes = "Copy from class to table by script"
+                '              objNew.Notes = "Copy from class to table by script"
                 objNew.Gentype = "SQL Server 2012"
                 objNew.Type = "Class"
                 objNew.Stereotype = "table"
             Case "BUSINESSOBJECT"
                 objNew = objPack.Elements.AddNew(strName, "ArchiMate_BusinessObject")
-                objNew.Notes = "Copy from class to businessobject by script"
-            Case Else '"DATAOBJECT"
+                '               objNew.Notes = "Copy from class to businessobject by script"
+            Case "DATAOBJECT"
                 objNew = objPack.Elements.AddNew(strName, "ArchiMate_DataObject")
-                objNew.Notes = "Copy from class to dataobject by script"
+                '               objNew.Notes = "Copy from class to dataobject by script"
+
         End Select
         objNew.Update()
+        objPack.Update()
         Return objNew
 
     End Function
+
+    ''' <summary>
+    ''' Create a trace association between two elements in different XDM layers
+    ''' </summary>
+    ''' <param name="objEle"></param>
+    ''' <param name="objNew"></param>
     Public Sub CreateTraceAssociation(ByVal objEle As EA.Element, ByVal objNew As EA.Element)
         Dim objCon As EA.Connector
         objCon = objEle.Connectors.AddNew(objEle.Name & " to " & objNew.Name, "trace")
@@ -460,6 +534,13 @@ Public Class IDEAGenerator
         objEle.Update()
     End Sub
 
+    ''' <summary>
+    ''' Copy an association
+    ''' </summary>
+    ''' <param name="oldConnection"></param>
+    ''' <param name="objEle"></param>
+    ''' <param name="objNew"></param>
+    ''' <returns></returns>
     Public Function CopyAssociation(oldConnection As EA.Connector, ByVal objEle As EA.Element, ByVal objNew As EA.Element) As EA.Connector
         Dim objCon As EA.Connector
         Try
@@ -479,6 +560,11 @@ Public Class IDEAGenerator
         End Try
         Return Nothing
     End Function
+    ''' <summary>
+    ''' Move an attribute from one element to the other for refactoring
+    ''' </summary>
+    ''' <param name="attribute_id"></param>
+    ''' <param name="target_id"></param>
     Public Sub RefactorAttribute(ByVal attribute_id As String, ByVal target_id As String)
         Dim strSQL As String
         strSQL = String.Format("UPDATE t_attribute SET object_id = {0} WHERE id = {1} ", target_id, attribute_id)

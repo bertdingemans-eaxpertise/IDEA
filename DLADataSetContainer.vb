@@ -1,25 +1,44 @@
 ﻿Imports System.Data.SqlClient
 Imports System.Data.OleDb
 Namespace DLAFormfactory
-
-
+    ''' <summary>
+    ''' Dataset container for the IDEA simulator
+    ''' </summary>
     Public Class DLADataSetContainer
         Protected objDS As DataSet
         Public Repository As EA.Repository
+        ''' <summary>
+        ''' Get a datatable from the dataset by name
+        ''' </summary>
+        ''' <param name="Name">Name of the datatable to retrieve</param>
+        ''' <returns></returns>
         Public Function GetDataTable(Name As String) As DataTable
             Return objDS.Tables(Name)
         End Function
+        ''' <summary>
+        ''' Get the dataset with the simulator elements
+        ''' </summary>
+        ''' <returns>Dataset</returns>
         Public ReadOnly Property ContainerDataSet() As DataSet
             Get
                 Return objDS
             End Get
         End Property
+        ''' <summary>
+        ''' Instantiate the simulator dataset container
+        ''' </summary>
+        ''' <param name="Name"></param>
         Public Sub New(Name As String)
             Me.objDS = New DataSet(Name)
             Me.CreateControlTable()
             Me.CreateCommandTable()
             Me.CreateEnumerationTable()
         End Sub
+        ''' <summary>
+        ''' Add an empty datatable to the dataset
+        ''' </summary>
+        ''' <param name="Name">Name of the new table</param>
+        ''' <returns></returns>
         Public Function AddTable(Name As String) As DataTable
             Dim objDT As DataTable
 
@@ -27,7 +46,11 @@ Namespace DLAFormfactory
             Return objDT
 
         End Function
-
+        ''' <summary>
+        ''' Create a control table and define the columns
+        ''' Control table is relevant for the simulator user interface
+        ''' </summary>
+        ''' <returns></returns>
         Private Function CreateControlTable() As Boolean
             Dim DT As DataTable
             Try
@@ -45,6 +68,10 @@ Namespace DLAFormfactory
             End Try
 
         End Function
+        ''' <summary>
+        ''' Transform the datatables in the tables collection to sql statments for insert update etc
+        ''' </summary>
+        ''' <returns></returns>
         Public Function DataTable2Command() As Boolean
             Try
                 For Each Table As DataTable In Me.objDS.Tables
@@ -59,9 +86,11 @@ Namespace DLAFormfactory
                 DLA2EAHelper.Error2Log(ex)
                 Return False
             End Try
-
-
         End Function
+        ''' <summary>
+        ''' Create the structure of the sys_command datatable   
+        ''' </summary>
+        ''' <returns></returns>
         Private Function CreateCommandTable() As Boolean
             Dim DT As DataTable
             Try
@@ -76,6 +105,13 @@ Namespace DLAFormfactory
             End Try
 
         End Function
+        ''' <summary>
+        ''' Add a command to the command systemtable
+        ''' </summary>
+        ''' <param name="Tablename">Name of the datatable</param>
+        ''' <param name="Commandname">Name of the command (insert/update etc</param>
+        ''' <param name="Statement">SQL statement</param>
+        ''' <returns></returns>
         Public Function AddCommand(Tablename As String, Commandname As String, Statement As String) As Boolean
             Dim oRow As DataRow
             Try
@@ -90,6 +126,11 @@ Namespace DLAFormfactory
                 Return False
             End Try
         End Function
+        ''' <summary>
+        ''' Transform a columnname to a default parameter template
+        ''' </summary>
+        ''' <param name="Column">Datacolumn</param>
+        ''' <returns>Parameter template</returns>
         Private Shared Function Column2ParaMeter(Column As DataColumn) As String
             Dim strParameter As String
             Dim DataType As String = Column.DataType.ToString().ToUpper()
@@ -101,13 +142,15 @@ Namespace DLAFormfactory
             End Select
             Return strParameter
         End Function
-
+        ''' <summary>
+        ''' Transform a datatable to an insert statement
+        ''' </summary>
+        ''' <param name="Table"></param>
+        ''' <returns>Insert statement</returns>
         Public Shared Function DataTable2Insert(Table As DataTable) As String
             Dim Template As String = "INSERT INTO #tablename# (#fieldlist#) VALUES (#valuelist#) "
             Template = Template.Replace("#tablename#", Table.TableName)
             Dim strColumns As String = "", strValues As String = ""
-
-
             For Each Column As DataColumn In Table.Columns
                 If Column.Expression.Length = 0 And Column.AutoIncrement = False Then
                     strColumns = strColumns + IIf(strColumns.Length = 0, "", ", ")
@@ -120,14 +163,22 @@ Namespace DLAFormfactory
             Template = Template.Replace("#valuelist#", strValues)
             Return Template
         End Function
-
+        ''' <summary>
+        ''' Transform a datatable to an delete statement
+        ''' </summary>
+        ''' <param name="Table"></param>
+        ''' <returns>Delete statement</returns>
         Public Shared Function DataTable2Delete(Table As DataTable) As String
             Dim Template As String = "DELETE FROM #tablename# #where# "
             Template = Template.Replace("#tablename#", Table.TableName)
             Template = Template.Replace("#where#", Table2Where(Table))
             Return Template
         End Function
-
+        ''' <summary>
+        ''' Transform a datatable to an update statement
+        ''' </summary>
+        ''' <param name="Table"></param>
+        ''' <returns>Update statement</returns>
         Public Shared Function DataTable2Update(Table As DataTable) As String
             Dim Template As String = "UPDATE #tablename# SET #fieldlist# #where# "
             Template = Template.Replace("#tablename#", Table.TableName)
@@ -142,6 +193,11 @@ Namespace DLAFormfactory
             Template = Template.Replace("#where#", Table2Where(Table))
             Return Template
         End Function
+        ''' <summary>
+        ''' Transform a datatable to an one row select statement
+        ''' </summary>
+        ''' <param name="Table"></param>
+        ''' <returns>Select statement</returns>
         Public Shared Function DataTable2Detail(Table As DataTable) As String
             Dim Template As String = "SELECT * FROM #tablename# #where# "
             Template = Template.Replace("#tablename#", Table.TableName)
@@ -156,7 +212,11 @@ Namespace DLAFormfactory
             Template = Template.Replace("#where#", Table2Where(Table))
             Return Template
         End Function
-
+        ''' <summary>
+        ''' Transform a datatable to a search select statement
+        ''' </summary>
+        ''' <param name="Table">Table name</param>
+        ''' <returns>Select </returns>
         Public Shared Function DataTable2List(Table As DataTable) As String
             Dim Template As String = "SELECT #fieldlist# FROM #tablename# "
             Template = Template.Replace("#tablename#", Table.TableName)
@@ -172,7 +232,11 @@ Namespace DLAFormfactory
             'Template = Template.Replace("#where#", Table2Where(Table))
             Return Template
         End Function
-
+        ''' <summary>
+        ''' create a where statement for a datatable
+        ''' </summary>
+        ''' <param name="Table"></param>
+        ''' <returns></returns>
         Shared Function Table2Where(Table As DataTable) As String
             Dim Template As String = "WHERE #keylist#"
             Dim keys As String = ""
@@ -181,6 +245,10 @@ Namespace DLAFormfactory
             Next
             Return Template.Replace("#keylist#", keys)
         End Function
+        ''' <summary>
+        ''' transform an enumeration to the content of the enumeration system table
+        ''' </summary>
+        ''' <returns></returns>
         Private Function CreateEnumerationTable() As Boolean
             Dim DT As DataTable
             Try
@@ -194,12 +262,22 @@ Namespace DLAFormfactory
             End Try
 
         End Function
+        ''' <summary>
+        ''' create a view with a list of controls for a table
+        ''' </summary>
+        ''' <param name="tablename"></param>
+        ''' <returns></returns>
         Public Function GetControlsForTable(tablename As String) As DataView
             Dim oDV As DataView
             oDV = New DataView(Me.objDS.Tables("SYS_CONTROLS"))
             oDV.RowFilter = String.Format(" tablename='{0}'", tablename)
             Return oDV
         End Function
+        ''' <summary>
+        ''' Get an enumeration from the enumeration system table
+        ''' </summary>
+        ''' <param name="enumname"></param>
+        ''' <returns></returns>
         Public Function GetEnumeration(enumname As String) As DataTable
             Dim oDV As DataView
             Try
@@ -209,15 +287,25 @@ Namespace DLAFormfactory
             Catch ex As Exception
                 DLA2EAHelper.Error2Log(ex)
             End Try
-
+            Return Nothing
         End Function
+        ''' <summary>
+        ''' Get a commands from the system table with commands
+        ''' </summary>
+        ''' <param name="tablename">name of the table</param>
+        ''' <param name="commandname"> name of the command</param>
+        ''' <returns></returns>
         Public Function GetCommandForTable(tablename As String, commandname As String) As DataTable
             Dim oDV As DataView
             oDV = New DataView(Me.objDS.Tables("SYS_COMMAND"))
             oDV.RowFilter = String.Format(" tablename='{0}' And commandname='{1}' ", tablename, commandname)
             Return oDV.ToTable()
         End Function
-
+        ''' <summary>
+        ''' Get an empty dataview for a table
+        ''' </summary>
+        ''' <param name="Name"></param>
+        ''' <returns></returns>
         Public Function GetDataViewFromTable(Name As String) As DataView
             Try
                 Return New DataView(Me.objDS.Tables(Name))
@@ -226,6 +314,9 @@ Namespace DLAFormfactory
             End Try
             Return Nothing
         End Function
+        ''' <summary>
+        ''' Load the tables from a sql data source
+        ''' </summary>
         Public Sub LoadDataFromSQL()
             Dim objDB As DLAFormfactory.DLADatabase
             Try
@@ -247,7 +338,9 @@ Namespace DLAFormfactory
                 DLA2EAHelper.Error2Log(ex)
             End Try
         End Sub
-
+        ''' <summary>
+        ''' Load the datatable content from a XML file
+        ''' </summary>
         Public Sub LoadDataFromXML()
             Try
                 Me.objDS.EnforceConstraints = False
@@ -265,6 +358,10 @@ Namespace DLAFormfactory
                 DLA2EAHelper.Error2Log(ex)
             End Try
         End Sub
+        ''' <summary>
+        ''' Save the dataset to a XML file
+        ''' </summary>
+        ''' <param name="WriteMode">Use write options for creating the XML file Default is no schema</param>
         Public Sub SaveDataToXML(Optional WriteMode As XmlWriteMode = XmlWriteMode.IgnoreSchema)
             Try
                 If My.Settings.XMLFile.Length > 0 Then
@@ -287,10 +384,17 @@ Namespace DLAFormfactory
                 DLA2EAHelper.Error2Log(ex)
             End Try
         End Sub
+        ''' <summary>
+        ''' Add a datacolumn to a datatable in a default format
+        ''' </summary>
+        ''' <param name="DT"></param>
+        ''' <param name="ColumnName"></param>
+        ''' <param name="ColumnAlias"></param>
+        ''' <param name="ColumnType"></param>
+        ''' <returns></returns>
         Public Function AddColumn(DT As DataTable, ColumnName As String, ColumnAlias As String, ColumnType As String) As DataColumn
             Dim objColumn As DataColumn
             Try
-
                 objColumn = DT.Columns.Add(ColumnName.Replace(" ", "_"))
                 Select Case ColumnType
                     Case "String"
@@ -328,6 +432,12 @@ Namespace DLAFormfactory
             End Try
             Return objColumn
         End Function
+        ''' <summary>
+        ''' Add a primary key to the datatable based on a column name
+        ''' </summary>
+        ''' <param name="DT"></param>
+        ''' <param name="ColumnName"></param>
+        ''' <returns></returns>
         Public Function AddPrimaryKey(DT As DataTable, ColumnName As String) As Boolean
             Dim objColumn As DataColumn
             Try
@@ -344,7 +454,15 @@ Namespace DLAFormfactory
             End Try
         End Function
 
-
+        ''' <summary>
+        ''' Add a column to a datatable with extra parameters for dbnull
+        ''' </summary>
+        ''' <param name="DT"></param>
+        ''' <param name="ColumnName"></param>
+        ''' <param name="ColumnAlias"></param>
+        ''' <param name="ColumnType"></param>
+        ''' <param name="AllowNull"></param>
+        ''' <returns></returns>
         Public Function AddColumn(DT As DataTable, ColumnName As String, ColumnAlias As String, ColumnType As String, AllowNull As Boolean) As DataColumn
             Dim objColumn As DataColumn
             objColumn = Me.AddColumn(DT, ColumnName.Replace(" ", "_"), ColumnAlias, ColumnType)
@@ -352,6 +470,15 @@ Namespace DLAFormfactory
 
             Return objColumn
         End Function
+        ''' <summary>
+        ''' Add a calculated column based on an expression
+        ''' </summary>
+        ''' <param name="DT"></param>
+        ''' <param name="ColumnName"></param>
+        ''' <param name="ColumnAlias"></param>
+        ''' <param name="ColumnType"></param>
+        ''' <param name="Expression"></param>
+        ''' <returns></returns>
         Public Function AddCalculatedColumn(DT As DataTable, ColumnName As String, ColumnAlias As String, ColumnType As String, Expression As String) As DataColumn
             Dim objColumn As DataColumn
             Try
@@ -364,9 +491,17 @@ Namespace DLAFormfactory
                 MsgBox(DT.TableName)
                 DLA2EAHelper.Error2Log(ex)
             End Try
-
+            Return Nothing
         End Function
-
+        ''' <summary>
+        ''' Add a control to the systemtable with controls
+        ''' </summary>
+        ''' <param name="Tablename"></param>
+        ''' <param name="Controlname"></param>
+        ''' <param name="ControlType"></param>
+        ''' <param name="ControlRequired"></param>
+        ''' <param name="Controlcaption"></param>
+        ''' <returns></returns>
         Public Function AddControl(Tablename As String, Controlname As String, ControlType As String, ControlRequired As Boolean, Controlcaption As String) As Boolean
             Dim oRow As DataRow
             Try
@@ -383,6 +518,12 @@ Namespace DLAFormfactory
                 Return False
             End Try
         End Function
+        ''' <summary>
+        ''' Add a constraint collection from the ea element and transform it to a validation calculated field
+        ''' </summary>
+        ''' <param name="Element"></param>
+        ''' <param name="DT"></param>
+        ''' <returns></returns>
         Public Function AddConditions(Element As EA.Element, DT As DataTable) As Boolean
             Dim strExpression As String = ""
             For Each Constraint As EA.Constraint In Element.Constraints
@@ -394,7 +535,16 @@ Namespace DLAFormfactory
             Return True
 
         End Function
-
+        ''' <summary>
+        ''' Add a control to the controls system table
+        ''' </summary>
+        ''' <param name="Tablename"></param>
+        ''' <param name="Controlname"></param>
+        ''' <param name="ControlType"></param>
+        ''' <param name="Lookup"></param>
+        ''' <param name="ControlRequired"></param>
+        ''' <param name="Controlcaption"></param>
+        ''' <returns></returns>
         Public Function AddControl(Tablename As String, Controlname As String, ControlType As String, Lookup As String, ControlRequired As Boolean, Controlcaption As String) As Boolean
             Dim oRow As DataRow
             Try
@@ -412,9 +562,13 @@ Namespace DLAFormfactory
                 Return False
             End Try
         End Function
-
+        ''' <summary>
+        ''' Transform the inheritance structure to a list of datacolumns in the datatable
+        ''' </summary>
+        ''' <param name="element"></param>
+        ''' <param name="DT"></param>
+        ''' <returns></returns>
         Public Function Inheritance2DataSet(element As EA.Element, DT As DataTable) As Boolean
-
             Try
                 Dim oCon As EA.Connector
                 For Each oCon In element.Connectors
@@ -433,25 +587,34 @@ Namespace DLAFormfactory
                 Return False
             End Try
         End Function
+        ''' <summary>
+        ''' When there is no lookup defined create a lookup based on the scope public of the attributes
+        ''' </summary>
+        ''' <param name="Element"></param>
+        ''' <returns></returns>
         Public Function DefaultLookup(Element As EA.Element) As Boolean
             Dim Attribute As EA.Attribute
             Dim blnLookup As Boolean = False
             Dim strLookup As String = ""
-            For Each Attribute In Element.Attributes
-                If Attribute.Name.ToUpper().Contains("LOOKUP") Then
-                    blnLookup = True
-                    Return blnLookup
+            If Not Me.objDS.Tables(Element.Name).Columns.Contains("Lookup") Then
+                For Each Attribute In Element.Attributes
+                    If Attribute.Visibility = "Public" Then
+                        strLookup = strLookup + IIf(strLookup.Length > 0, " + ", "") + "[" + Attribute.Name + "]"
+                        blnLookup = True
+                    End If
+                Next
+                If strLookup.Length > 0 Then
+                    AddCalculatedColumn(Me.objDS.Tables(Element.Name), "Lookup", Element.Name, "String", strLookup)
                 End If
-                If Attribute.Visibility = "Public" Then
-                    strLookup = strLookup + IIf(strLookup.Length > 0, " + ", "") + "[" + Attribute.Name + "]"
-                End If
-            Next
-            If strLookup.Length > 0 Then
-                AddCalculatedColumn(Me.objDS.Tables(Element.Name), "Lookup", Element.Name, "String", strLookup)
             End If
             Return blnLookup
-
         End Function
+        ''' <summary>
+        ''' Create connectors in the dataset from the connectors in EA
+        ''' </summary>
+        ''' <param name="Element"></param>
+        ''' <param name="Package_id"></param>
+        ''' <returns></returns>
         Public Function Connectors2DataSet(Element As EA.Element, Package_id As Int64) As Boolean
             Dim strPrimaryKey As String
             Try
@@ -557,7 +720,13 @@ Namespace DLAFormfactory
             End Try
         End Function
 
-
+        ''' <summary>
+        ''' Bring the attributes from an element to a datatable (columns)
+        ''' </summary>
+        ''' <param name="Element"></param>
+        ''' <param name="DT"></param>
+        ''' <param name="prefix"></param>
+        ''' <returns></returns>
         Public Function Attributes2Dataset(Element As EA.Element, DT As DataTable, Optional prefix As String = "") As Boolean
             Try
                 Dim attribute As EA.Attribute
@@ -587,8 +756,12 @@ Namespace DLAFormfactory
                 Return False
             End Try
         End Function
-
-
+        ''' <summary>
+        ''' Add an enumation to the system table in a structured format
+        ''' </summary>
+        ''' <param name="Enumname"></param>
+        ''' <param name="Enumvalue"></param>
+        ''' <returns></returns>
         Public Function AddEnumeration(Enumname As String, Enumvalue As String) As Boolean
             Dim oRow As DataRow
             Try
@@ -602,12 +775,8 @@ Namespace DLAFormfactory
                 Return False
             End Try
         End Function
-        Public Function AddAssociation(Name As String, Parent As DataColumn, Child As DataColumn) As DataRelation
-            Return Me.objDS.Relations.Add(Name, Parent, Child)
-        End Function
-
+        'Public Function AddAssociation(Name As String, Parent As DataColumn, Child As DataColumn) As DataRelation
+        '    Return Me.objDS.Relations.Add(Name, Parent, Child)
+        'End Function
     End Class
-
-
-
 End Namespace

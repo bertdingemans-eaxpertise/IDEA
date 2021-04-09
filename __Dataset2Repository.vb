@@ -225,12 +225,10 @@
                 objPack = _Repository.GetPackageByID(Me.Package_Id)
                 Dim strSql As String
                 strSql = String.Format("SELECT object_id FROM t_object WHERE name = '{0}' ", name)
-                Dim objDS As DataSet
-                objDS = DLA2EAHelper.SQL2DataSet(strSql, Me.Repository)
-                If objDS.Tables.Count > 0 Then
-                    If objDS.Tables(1).Rows.Count = 1 Then
-                        objElement = Me.Repository.GetElementByID(objDS.Tables(1).Rows(0).Item("object_id"))
-                    End If
+                Dim objDT As DataTable
+                objDT = DLA2EAHelper.SQL2DataTable(strSql, Me.Repository)
+                If objDT.Rows.Count = 1 Then
+                    objElement = Me.Repository.GetElementByID(objDT.Rows(0).Item("object_id"))
                 End If
             Catch ex As Exception
                 fouten += "Fout in FindElement" & ex.Message & vbCrLf

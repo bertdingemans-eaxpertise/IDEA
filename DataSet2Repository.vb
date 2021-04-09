@@ -1,6 +1,5 @@
 Namespace DLAFormfactory
 
-
     ''' <summary>
     ''' Helper class for transforming output from the Sparx API in a more usable format
     ''' within a DotNet (windows) application.
@@ -13,6 +12,10 @@ Namespace DLAFormfactory
         ''' Bewaar de package property voor het aanmaken van elementen in dit package
         ''' </summary>
         Private _Package_id As String
+        ''' <summary>
+        ''' Return the stored package id
+        ''' </summary>
+        ''' <returns></returns>
         Public Property Package_Id() As String
             Get
                 Return _Package_id
@@ -33,7 +36,16 @@ Namespace DLAFormfactory
                 _Repository = value
             End Set
         End Property
-
+        ''' <summary>
+        ''' Process a datarow for import to transform to a new element and association in EA
+        ''' </summary>
+        ''' <param name="Parent">The element to start from</param>
+        ''' <param name="objRow">Datarow that is imported</param>
+        ''' <param name="Fieldname">The name of the field in the datarow</param>
+        ''' <param name="objStereoType">The stereotype of the element to connect to</param>
+        ''' <param name="ConStereoType">The stereotype of the column to connect to</param>
+        ''' <param name="PostFix">Eventually use a postfix (for a context) for the fieldcontent</param>
+        ''' <returns></returns>
         Public Function AddElementAndConnector(Parent As EA.Element, objRow As DataRow, Fieldname As String, objStereoType As String, ConStereoType As String, Optional PostFix As String = "") As EA.Element
             Try
                 Dim objChild As EA.Element
@@ -54,14 +66,13 @@ Namespace DLAFormfactory
         End Function
 
         ''' <summary>
-        ''' Voeg een attribuut toe aan een element
+        ''' Add an attribute to an element
         ''' </summary>
-        ''' <param name="objElement"></param>
-        ''' <param name="strName"></param>
-        ''' <param name="strType"></param>
+        ''' <param name="objElement">The element that is parent</param>
+        ''' <param name="strName">The name of the attribute</param>
+        ''' <param name="strType">The datatype of the element</param>
         ''' <returns></returns>
         Public Function AddAttribute(ByVal objElement As EA.Element, ByVal strName As String, ByVal strType As String) As EA.Element
-
             Dim objAttribute As EA.Attribute
             If Not IsDBNull(strName) Then
                 objAttribute = objElement.Attributes.AddNew(strName, strType)
@@ -70,12 +81,12 @@ Namespace DLAFormfactory
             Return objElement
         End Function
         ''' <summary>
-        ''' Voeg een tagged value toe aan een element
+        ''' Add a tagged value to an element
         ''' </summary>
-        ''' <param name="Element"></param>
-        ''' <param name="name"></param>
-        ''' <param name="value"></param>
-        ''' <param name="isMemo"></param>
+        ''' <param name="Element">Parent element</param>
+        ''' <param name="name">Name of the tagged value</param>
+        ''' <param name="value">Value of the tagged value</param>
+        ''' <param name="isMemo">Is the value a memo (to the notes field of the TV)</param>
         Public Sub AddTaggedValue(ByVal Element As EA.Element, ByVal name As String, ByVal value As String, ByVal isMemo As Boolean)
             Try
                 Dim objTV As EA.TaggedValue
@@ -92,17 +103,39 @@ Namespace DLAFormfactory
                 DLA2EAHelper.Error2Log(ex)
             End Try
         End Sub
-
+        ''' <summary>
+        ''' Add (when not exist) or update a tagged value from a datarow
+        ''' </summary>
+        ''' <param name="Element">Parent element</param>
+        ''' <param name="name">Name of the field in the datarow</param>
+        ''' <param name="Row">Datarow with the import data</param>
+        ''' <param name="isMemo">Is the value a memo</param>
         Public Sub AddOrUpdateTaggedValue(ByVal Element As EA.Element, ByVal name As String, Row As DataRow, ByVal isMemo As Boolean)
             If Not IsDBNull(Row.Item(name)) Then
                 Me.AddOrUpdateTaggedValue(Element, name, Row.Item(name), isMemo)
             End If
         End Sub
+        ''' <summary>
+        ''' Add (when not exist) or update a tagged value from a datarow with a different tv name
+        ''' </summary>
+        ''' <param name="Element">Parement element</param>
+        ''' <param name="tvname">Name of the tagged value</param>
+        ''' <param name="rowname">Name of the field in the datarow</param>
+        ''' <param name="Row">datarow with imported data</param>
+        ''' <param name="isMemo">Memo field</param>
         Public Sub AddOrUpdateTaggedValue(ByVal Element As EA.Element, ByVal tvname As String, rowname As String, Row As DataRow, ByVal isMemo As Boolean)
             If Not IsDBNull(Row.Item(rowname)) Then
                 Me.AddOrUpdateTaggedValue(Element, tvname, Row.Item(rowname).ToString(), isMemo)
             End If
         End Sub
+        ''' <summary>
+        ''' Add an attribute to an element
+        ''' </summary>
+        ''' <param name="Element">Parent element</param>
+        ''' <param name="name">name of the attribute</param>
+        ''' <param name="type">datatype of the attribute</param>
+        ''' <param name="Note">Description of the attribute</param>
+        ''' <returns>Updated attribute</returns>
         Public Shared Function AddAttribute(ByVal Element As EA.Element, ByVal name As String, ByVal type As String, Note As String) As EA.Attribute
             Try
                 Dim objAttribute As EA.Attribute
@@ -116,12 +149,17 @@ Namespace DLAFormfactory
             End Try
             Return Nothing
         End Function
+        ''' <summary>
+        ''' Get a tagged value content for an element
+        ''' </summary>
+        ''' <param name="Element">Parent element</param>
+        ''' <param name="name">Tagged value name</param>
+        ''' <returns>Tagged value content</returns>
         Public Shared Function GetTaggedValue(ByVal Element As EA.Element, ByVal name As String) As String
             Dim objTV As EA.TaggedValue
             Dim Found As Boolean = False
             Dim strRet As String = ""
             Try
-
                 For Each objTV In Element.TaggedValues
                     If objTV.Name = name Then
                         If objTV.Value = "<memo>" Then
@@ -139,13 +177,12 @@ Namespace DLAFormfactory
             Return strRet
         End Function
         ''' <summary>
-        ''' Voeg een tagged value toe aan een element en als deze al bestaat update dan de inhoud van deze tagged value
+        ''' Add or update a tagged value to an element
         ''' </summary>
-        ''' <param name="Element"></param>
-        ''' <param name="name"></param>
-        ''' <param name="value"></param>
-        ''' <param name="isMemo"></param>
-        ''' 
+        ''' <param name="Element">Parent object</param>
+        ''' <param name="name">Tagged value name</param>
+        ''' <param name="value">Tagged value content</param>
+        ''' <param name="isMemo">Is the value a memo value</param>
         Public Sub AddOrUpdateTaggedValue(ByVal Element As EA.Element, ByVal name As String, ByVal value As String, ByVal isMemo As Boolean)
             Try
                 Dim objTV As EA.TaggedValue
@@ -176,10 +213,10 @@ Namespace DLAFormfactory
             End Try
         End Sub
         ''' <summary>
-        ''' Op basis van een stereotype moet een type bepaald worden voor het aanmaken van nieuwe elementen. Deze routine handelt dat af, zou mooier zijn met een array van items
+        ''' Conevert a stereotype to an objecttype
         ''' </summary>
-        ''' <param name="stereotype"></param>
-        ''' <returns></returns>
+        ''' <param name="stereotype">Name of the stereotype</param>
+        ''' <returns>Name of the objecttype</returns>
         Public Function ConvertStereotype2Type(ByVal stereotype As String) As String
             Dim strRet As String = "Class"
             Select Case stereotype.ToUpper()
@@ -221,10 +258,10 @@ Namespace DLAFormfactory
             Return strRet
         End Function
         ''' <summary>
-        ''' Converteren van een connector stereotype naar een type hebben we nodig voor het aanmaken van nieuwe connectoren
+        ''' Convert a stereotype of a connector to a connectortype
         ''' </summary>
-        ''' <param name="stereotype"></param>
-        ''' <returns></returns>
+        ''' <param name="stereotype">Name of the stereotype</param>
+        ''' <returns>Name of the connectortype</returns>
         Public Function ConvertAssociationStereotype2Type(ByVal stereotype As String) As String
             Dim strRet As String = "Association"
             Select Case stereotype.ToUpper()
@@ -234,11 +271,11 @@ Namespace DLAFormfactory
             Return strRet
         End Function
         ''' <summary>
-        ''' Toevoegen van een element aan de repository
+        ''' Add an element to the repository
         ''' </summary>
-        ''' <param name="stereotype"></param>
-        ''' <param name="name"></param>
-        ''' <param name="memo"></param>
+        ''' <param name="stereotype">Stereotype of the element</param>
+        ''' <param name="name">Name of the element</param>
+        ''' <param name="memo">Note field text</param>
         ''' <returns></returns>
         Public Function AddElement(ByVal stereotype As String, ByVal name As String, ByVal memo As String) As EA.Element
             Dim objPack As EA.Package
@@ -264,10 +301,10 @@ Namespace DLAFormfactory
             Return objElement
         End Function
         ''' <summary>
-        ''' Kijk op basis van de name van een element of deze al bestaat in de repository
+        ''' Find an element by name
         ''' </summary>
-        ''' <param name="name"></param>
-        ''' <returns></returns>
+        ''' <param name="name">The name to search for</param>
+        ''' <returns>Return the element when found otherwise return nothing</returns>
         Public Function FindElement(ByVal name As String) As EA.Element
             Dim objPack As EA.Package
             Dim objElement As New EA.Element()
@@ -285,7 +322,11 @@ Namespace DLAFormfactory
             End Try
             Return objElement
         End Function
-
+        ''' <summary>
+        ''' Find a package by name
+        ''' </summary>
+        ''' <param name="name">Name to search for</param>
+        ''' <returns>The found package or nothing</returns>
         Public Function FindPackage(ByVal name As String) As EA.Package
             Dim objPack As EA.Package
             Try
@@ -304,15 +345,14 @@ Namespace DLAFormfactory
             Return objPack
         End Function
         ''' <summary>
-        ''' Kijk op basis van de name en stereotype van een element of deze al bestaat in de repository
+        ''' Find an element by name and stereotype
         ''' </summary>
-        ''' <param name="name"></param>
-        ''' <param name="stereotype"></param>
-        ''' <returns></returns>
+        ''' <param name="name">Name of the element</param>
+        ''' <param name="stereotype">Name of the stereotype</param>
+        ''' <returns>Found element or package</returns>
         Public Function FindElement(ByVal name As String, ByVal stereotype As String) As EA.Element
             Dim objPack As EA.Package
             Dim objElement As EA.Element
-
             Try
                 objPack = _Repository.GetPackageByID(Me.Package_Id)
                 Dim strSql As String
@@ -328,27 +368,25 @@ Namespace DLAFormfactory
             Return Nothing
         End Function
         ''' <summary>
-        ''' Zoek naar een element in de repo en als deze niet bestaat maak dan een nieuwe aan
+        ''' Search or add an element by name and stereotype
         ''' </summary>
-        ''' <param name="name"></param>
-        ''' <param name="stereotype"></param>
-        ''' <param name="Found"></param>
-        ''' <returns></returns>
+        ''' <param name="name">Name of the element</param>
+        ''' <param name="stereotype">Stereotype</param>
+        ''' <param name="Found">Element found (true) or added (false)</param>
+        ''' <returns>Element found or added</returns>
         Public Function FindOrAddElement(ByVal name As String, ByVal stereotype As String, ByRef Found As Boolean) As EA.Element
             Return Me.FindOrAddElement(name, stereotype, Found, "")
         End Function
         ''' <summary>
-        ''' Zoek naar een element in de repo en als deze niet bestaat maak dan een nieuwe aan
-        ''' Extra is hier dat een memo voor de beschrijving kan worden toegevoegd
+        ''' Find or add an element including a memo
         ''' </summary>
-        ''' <param name="name"></param>
-        ''' <param name="stereotype"></param>
-        ''' <param name="Found"></param>
-        ''' <param name="memo"></param>
-        ''' <returns></returns>
+        ''' <param name="name">Name of the element</param>
+        ''' <param name="stereotype">Stereotype</param>
+        ''' <param name="Found">Element found (true) or added (false)</param>
+        ''' <param name="memo">Memo with a description of the element</param>
+        ''' <returns>Element found or added</returns>
         Public Function FindOrAddElement(ByVal name As String, ByVal stereotype As String, ByRef Found As Boolean, ByVal memo As String) As EA.Element
             Dim objElement As EA.Element
-
             objElement = Me.FindElement(name, stereotype, Found)
             If Found = False And name.Length > 0 Then
                 objElement = Me.AddElement(stereotype, name, memo)
@@ -357,16 +395,15 @@ Namespace DLAFormfactory
             Return objElement
         End Function
         ''' <summary>
-        ''' Zoek een element op basis van naam en stereotype binnen een package collection dat ingesteld is als instance variable
+        ''' Search for an element by name and stereotype
         ''' </summary>
-        ''' <param name="name">Naam van het element</param>
-        ''' <param name="stereotype">Stereotye van het element</param>
-        ''' <param name="Found"></param>
-        ''' <returns></returns>
+        ''' <param name="name">Name of the element</param>
+        ''' <param name="stereotype">Stereotye of the element</param>
+        ''' <param name="Found">Is the element found</param>
+        ''' <returns>The found element or nothing</returns>
         Public Function FindElement(ByVal name As String, ByVal stereotype As String, ByRef Found As Boolean) As EA.Element
             Dim objPack As EA.Package
             Dim objElement As EA.Element
-
             Try
                 objPack = _Repository.GetPackageByID(Me.Package_Id)
                 Dim strSql As String
@@ -391,12 +428,11 @@ Namespace DLAFormfactory
             Return Nothing
         End Function
         ''' <summary>
-        ''' zoek een element op basis van een tagged value naam en waarde
-        ''' wordt gebruikt als er een tagged value is voor bijvoorbeeld een externe sleutel
+        ''' Search for an element by tagged value (for keys from an external system
         ''' </summary>
-        ''' <param name="name"></param>
-        ''' <param name="value"></param>
-        ''' <returns></returns>
+        ''' <param name="name">Tagged value name</param>
+        ''' <param name="value">Value to search for</param>
+        ''' <returns>The found element or nothing</returns>
         Public Function FindElementByTaggedValue(ByVal name As String, ByVal value As String) As EA.Element
             Dim objPack As EA.Package
             Dim objElement As EA.Element
@@ -418,15 +454,14 @@ Namespace DLAFormfactory
             Return Nothing
         End Function
         ''' <summary>
-        ''' Zoek een element in de repository op basis van een alias en een stereotype combinatie
+        ''' Search an element by alias and stereotype
         ''' </summary>
-        ''' <param name="aliasname">gebruikte aliasnaam</param>
-        ''' <param name="stereotype">gebruikte stereotype</param>
-        ''' <returns></returns>
+        ''' <param name="aliasname">Aliasname</param>
+        ''' <param name="stereotype">Stereotype of the element</param>
+        ''' <returns>Element found or nothing</returns>
         Public Function FindElementByAlias(ByVal aliasname As String, ByVal stereotype As String) As EA.Element
             Dim objPack As EA.Package
             Dim objElement As EA.Element
-
             Try
                 objPack = _Repository.GetPackageByID(Me.Package_Id)
                 Dim strSql As String
@@ -444,37 +479,27 @@ Namespace DLAFormfactory
             Return Nothing
         End Function
         ''' <summary>
-        ''' voeg een connector toe aan de repository obv een dataset
+        ''' vAdd a connector to the repository
         ''' </summary>
-        ''' <param name="Source"></param>
-        ''' <param name="Target"></param>
-        ''' <param name="stereotype"></param>
-        ''' <returns></returns>
+        ''' <param name="Source">Source object</param>
+        ''' <param name="Target">Target object</param>
+        ''' <param name="stereotype">Connector stereotype</param>
+        ''' <returns>The added connector or nothing</returns>
         Public Function AddConnector(ByVal Source As EA.Element, ByVal Target As EA.Element, ByVal stereotype As String) As EA.Connector
             Return Me.AddConnector(Source, Target, stereotype, "")
         End Function
-
         ''' <summary>
-        ''' voeg een connector toe aan de repository obv een dataset
+        ''' Add a connector to the reposity with a connector name
         ''' </summary>
-        ''' <param name="Source"></param>
-        ''' <param name="Target"></param>
-        ''' <param name="stereotype"></param>
-        ''' <returns></returns>
+        ''' <param name="Source">Source object</param>
+        ''' <param name="Target">Target object</param>
+        ''' <param name="stereotype">Connector stereotype</param>
+        ''' <param name="Melding">Name of the connector</param>
+        ''' <returns>Added connector or nothing</returns>
         Public Function AddConnector(ByVal Source As EA.Element, ByVal Target As EA.Element, ByVal stereotype As String, ByVal Melding As String) As EA.Connector
-            Dim objPack As EA.Package
             Dim objConnector As EA.Connector
             Dim blnFound As Boolean = False
-
             Try
-                objPack = _Repository.GetPackageByID(Me.Package_Id)
-                'eerst controleren of de connector niet al bestaat
-                'For Each objConnector In Source.Connectors.
-                '    If objConnector.Stereotype = stereotype And objConnector.ClientID = Target.ElementID Then
-                '        blnFound = True
-                '    Exit For
-                '    End If
-                'Next
                 Dim sql As String
 
                 sql = String.Format("select t_connector.connector_id from t_connector where t_connector.stereotype = '{0}' and t_connector.end_object_id = {1} and t_connector.start_object_id = {2} ", stereotype, Source.ElementID, Target.ElementID)
@@ -488,7 +513,6 @@ Namespace DLAFormfactory
                     objConnector.Direction = "Unspecified"
                     objConnector.Update()
                     Source.Update()
-                    objPack.Update()
                 Else
                     Dim Row As DataRow = objDT.Rows(0)
                     objConnector = Repository.GetConnectorByID(Convert.ToInt32(Row("connector_id")))

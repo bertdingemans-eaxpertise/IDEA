@@ -7,10 +7,7 @@ Imports System.Data.Common
 Imports System.Configuration
 Namespace DLAFormfactory
     ''' <summary>
-    ''' Klasse voor communicatie met de database
-    ''' later kunnen we hier de variaties in opnemen
-    ''' nu alleen voor SQL server en access
-    ''' kan later een interface worden met instantiaties voor andere platformen
+    ''' Communication with a database
     ''' </summary>
     ''' <remarks></remarks>
     Public Class DLADatabase
@@ -23,13 +20,15 @@ Namespace DLAFormfactory
         Protected strStatement As String
         Private blnTransaction As Boolean
         Private blnSupplierIsReader As Boolean
-
-
+        ''' <summary>
+        ''' Is the sql connection an oledb connection
+        ''' </summary>
+        ''' <returns>True when an oledb connection</returns>
         Public Function IsOleDB() As Boolean
             Return Me.strConnection.ToUpper().Contains("OLEDB")
         End Function
         ''' <summary>
-        ''' Geef de connectiestring als returnwaarde
+        ''' Get the active connectionstring
         ''' </summary>
         ''' <returns></returns>
         ''' <remarks></remarks>
@@ -37,7 +36,7 @@ Namespace DLAFormfactory
             Return Me.strConnection
         End Function
         ''' <summary>
-        ''' Is het een MS-Access database dan de SQL server specifieke zaken omzetten naar access items
+        ''' Is it an access database that is connected
         ''' </summary>
         ''' <returns></returns>
         ''' <remarks></remarks>
@@ -46,8 +45,7 @@ Namespace DLAFormfactory
         End Function
 
         ''' <summary>
-        ''' Maak een connectie met de database
-        ''' Dit op basis van de verschillende Database servers
+        ''' Make connection to a database
         ''' </summary>
         ''' <remarks></remarks>
         Private Sub MakeConnection()
@@ -58,8 +56,7 @@ Namespace DLAFormfactory
             End If
         End Sub
         ''' <summary>
-        ''' Zet alle instellingen voor de connectie en kies eventueel een repository uit de cookies
-        ''' </summary>
+        ''' ZSet the connection string for the database
         ''' <param name="strConnect">Connectiestring</param>
         ''' <remarks></remarks>
         Private Sub SetConnection(strConnect As String)
@@ -69,37 +66,12 @@ Namespace DLAFormfactory
             Me.blnSupplierIsReader = True
         End Sub
         ''' <summary>
-        ''' maak een object aan en zorg dat de connectie geopend wordt
+        ''' Instantiate database object
         ''' </summary>
         ''' <remarks></remarks>
         Sub New()
             MakeConnection()
             SetConnection(Me.strConnection)
-        End Sub
-        ''' <summary>
-        ''' maak een object aan en zorg dat de connectie geopend wordt
-        ''' </summary>
-        ''' <param name="strConnect">Connectiestring wordt als init parameter meegegeven</param>
-        ''' <remarks></remarks>
-        Sub New(ByVal strConnect As String)
-            MakeConnection()
-            SetConnection(strConnect)
-            Me.ClearError()
-            Me.blnTransaction = True
-            Me.blnSupplierIsReader = True
-        End Sub
-        ''' <summary>
-        ''' maak een object aan en zorg dat de connectie geopend wordt
-        ''' en werk wel of niet met een transactie
-        ''' </summary>
-        ''' <param name="blnTrans"></param>
-        ''' <remarks></remarks>
-        Sub New(ByVal blnTrans As Boolean)
-            MakeConnection()
-            Me.objCon.ConnectionString = strConnection
-            Me.ClearError()
-            Me.blnTransaction = blnTrans
-            Me.blnSupplierIsReader = True
         End Sub
         ''' <summary>
         ''' Geeft aan of de DLASupplier een dataset is ipv een datareader
@@ -148,8 +120,11 @@ Namespace DLAFormfactory
             adapter.Fill(Table)
             Return Table
         End Function
-
-
+        ''' <summary>
+        ''' execute a modify (insert/update/delete statement
+        ''' </summary>
+        ''' <param name="strSql">SQL statement to execute</param>
+        ''' <returns></returns>
         Public Function ExecuteModify(ByVal strSql As String) As Boolean
             Dim objCommand As DbCommand
             Dim blnOk As Boolean
@@ -184,7 +159,7 @@ Namespace DLAFormfactory
         ''' <summary>
         ''' Open een connectie met de database obv de connectiestring
         ''' </summary>
-        ''' <param name="blnTrans"></param>
+        ''' <param name="blnTrans">Use a transaction</param>
         ''' <remarks></remarks>
         Public Sub OpenConnection(ByVal blnTrans As Boolean)
             Me.objCon.Open()
@@ -235,8 +210,7 @@ Namespace DLAFormfactory
             End If
             Return strSql
         End Function
-        ''' <summary>
-        ''' Voer een gegevensverstrekkend SQL statement uit en geef het terug als een DLAsupplier
+        ''' <summary>Execute an sql statement and transform to a supplier
         ''' </summary>
         ''' <param name="strSql"></param>
         ''' <returns></returns>
@@ -249,15 +223,13 @@ Namespace DLAFormfactory
             Return objSP
         End Function
         ''' <summary>
-        ''' Voer een gegevensverstrekkend SQL statement uit en geef het terug als een DLAsupplier
+        ''' Execute a sql as a selectstatement and return a data supplier
         ''' </summary>
-        ''' <param name="strSql">Sql statement</param>
-        ''' <param name="blnSupplierAsReader">Geef aan of het een reader of een dataset moet zijn als resultset</param>
+        ''' <param name="strSql">SQL statement</param>
+        ''' <param name="blnSupplierAsReader">Define the supplier type</param>
         ''' <returns></returns>
-        ''' <remarks></remarks>
         Public Function ExecuteSupply(ByVal strSql As String, ByVal blnSupplierAsReader As Boolean) As DLASupplier
             Dim objSP As New DLASupplier(blnSupplierAsReader)
-
             Me.strStatement = Me.DefaultSql(strSql)
             objSP.SetStatement(strStatement, Me.objCon)
             Return objSP

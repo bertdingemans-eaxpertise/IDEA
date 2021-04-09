@@ -5,6 +5,7 @@ Imports TEA.DLAFormfactory
 ''' Class for the HTML generator. Various functions to generate HTML pages and
 ''' snippets from the elements in the repository
 ''' </summary>
+''' 
 Public Class HTMLPublicator
     Const ForReading = 1, ForWriting = 2
 
@@ -83,7 +84,7 @@ Public Class HTMLPublicator
                 Return True
             End If
         End If
-
+        Return False
     End Function
     ''' <summary>
     ''' Check if a diagram is processed and if so remove it from the list of to be processed diagrams
@@ -99,7 +100,11 @@ Public Class HTMLPublicator
             Return False
         End If
     End Function
-
+    ''' <summary>
+    ''' Remove a package from the list of packages based on the id
+    ''' </summary>
+    ''' <param name="ID"></param>
+    ''' <returns></returns>
     Private Function CheckAndRemovePackage(ByVal ID As String) As Boolean
         If Me.oALPackages.Contains(ID) Then
             Me.oALPackages.Remove(ID)
@@ -109,7 +114,11 @@ Public Class HTMLPublicator
             Return False
         End If
     End Function
-
+    ''' <summary>
+    ''' Remove a package from the list of elements based on the id
+    ''' </summary>
+    ''' <param name="ID"></param>
+    ''' <returns>Success</returns>
     Private Function CheckAndRemoveElement(ByVal ID As String) As Boolean
         If Me.oALElements.Contains(ID) Then
             Me.oALElements.Remove(ID)
@@ -158,19 +167,28 @@ Public Class HTMLPublicator
     Public Sub Export2HTML(ByVal sNaam As String, ByVal sContent As String)
         'Export content naar een htmlfile gebaseerd op een constante in het templatebased on the constant of the path 
         Dim sValue As String
-
         sValue = sTemplate.Replace("#content#", sContent)
         'when a homepage is defined this is added too
         sValue = sValue.Replace("#home", sHome)
         File.WriteAllText(FullFileName(sPath, sNaam), sValue)
         Repository.WriteOutput("IDEA", FullFileName(sPath, sNaam) + " Is created", 0)
     End Sub
+    ''' <summary>
+    ''' Make a full file name of the html file including the path and the extension
+    ''' </summary>
+    ''' <param name="sPath"></param>
+    ''' <param name="sNaam"></param>
+    ''' <returns></returns>
     Public Shared Function FullFileName(ByVal sPath As String, ByVal sNaam As String) As String
         If Not sNaam.ToLower.Contains(".htm") Then
             Return sPath & sNaam & ".html"
         End If
         Return sPath & sNaam
     End Function
+    ''' <summary>
+    ''' Publish the package content to Html pages
+    ''' </summary>
+    ''' <param name="oPkg"></param>
     Public Sub PubliceerRootPackage(ByVal oPkg As EA.Package)
         'Voor de zekerheid als de root anders verwerkt gaat worden
         sHome = "package" + oPkg.PackageID.ToString() + ".html"
@@ -178,9 +196,10 @@ Public Class HTMLPublicator
         PubliceerSubPackages()
         PubliceerDiagrams()
         PubliceerElements()
-
     End Sub
-
+    ''' <summary>
+    ''' Publish the subpackages of a package
+    ''' </summary>
     Public Sub PubliceerSubPackages()
         Try
             Dim oRow As DataRow = Me._Templates.GetRowByName("Detail_Package")
@@ -209,9 +228,10 @@ Public Class HTMLPublicator
         Catch ex As Exception
             DLA2EAHelper.Error2Log(ex)
         End Try
-
     End Sub
-
+    ''' <summary>
+    ''' Process all the elements etc based on the collection of html templates
+    ''' </summary>
     Public Sub PubliceerHTMLPagina()
         Try
             Dim oRow As DataRow
@@ -227,6 +247,9 @@ Public Class HTMLPublicator
         End Try
 
     End Sub
+    ''' <summary>
+    ''' Publish  all the diagrams based on an array of found diagrams
+    ''' </summary>
     Public Sub PubliceerDiagrams()
         Try
             Dim oRow As DataRow = Me._Templates.GetRowByName("Detail_Diagram")
@@ -257,7 +280,9 @@ Public Class HTMLPublicator
         End Try
 
     End Sub
-
+    ''' <summary>
+    ''' Publish all the elements found based on an array of found elements
+    ''' </summary>
     Public Sub PubliceerElements()
         Try
             Dim oRow As DataRow = Me._Templates.GetRowByName("Detail_Element")
@@ -304,9 +329,17 @@ Public Class HTMLPublicator
         If bNiveau = True Then
             oSBSiteMap.Append("</strong>")
         End If
-
     End Sub
-
+    ''' <summary>
+    ''' Process sql statement for various templates for an element
+    ''' </summary>
+    ''' <param name="sNaam"></param>
+    ''' <param name="sSql"></param>
+    ''' <param name="sHeader"></param>
+    ''' <param name="sBody"></param>
+    ''' <param name="sFooter"></param>
+    ''' <param name="id"></param>
+    ''' <returns></returns>
     Public Function ProcessSQL2Template(ByRef sNaam As String, sSql As String, sHeader As String, sBody As String, sFooter As String, id As String) As String
         Dim oDataTable As DataTable
         Dim sResultaat As String = ""
@@ -330,7 +363,6 @@ Public Class HTMLPublicator
             Else
                 sResultaat = sBody
             End If
-
             'daarna gaan we kijken of er nog andere html blokken zitten
             While sResultaat.Contains("#list") Or sResultaat.Contains("#detail")
                 Repository.WriteOutput("IDEA", sResultaat, 0)

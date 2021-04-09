@@ -32,38 +32,34 @@ Public Class FrmIDEATable
     End Sub
 
     Public Sub LoadElement()
-        Dim objDS As DataSet
-        objDS = DLA2EAHelper.SQL2DataSet("SELECT object_id, name, object_type FROM t_object WHERE stereotype IN('table', 'XSDcomplexType') ORDER BY name", Me.Repository)
-        Me.ComboBoxElement.DataSource = objDS.Tables(1)
+        Dim objDT As DataTable
+        objDT = DLA2EAHelper.SQL2DataTable("SELECT object_id, name, object_type FROM t_object WHERE stereotype IN('table', 'XSDcomplexType') ORDER BY name", Me.Repository)
+        Me.ComboBoxElement.DataSource = objDT
         Me.ComboBoxElement.DisplayMember = "name"
         Me.ComboBoxElement.ValueMember = "object_id"
         Me.ComboBoxElement.SelectedValue = Me.Element.ElementID
-        Me.ComboBoxExistingRefactor.DataSource = objDS.Tables(1)
+        Me.ComboBoxExistingRefactor.DataSource = objDT
         Me.ComboBoxExistingRefactor.DisplayMember = "name"
         Me.ComboBoxExistingRefactor.ValueMember = "object_id"
 
-        objDS = DLA2EAHelper.SQL2DataSet("SELECT package_id, name FROM t_package ORDER BY name", Me.Repository)
-        Me.ComboBoxTargetPackage.DataSource = objDS.Tables(1)
+        objDT = DLA2EAHelper.SQL2DataTable("SELECT package_id, name FROM t_package ORDER BY name", Me.Repository)
+        Me.ComboBoxTargetPackage.DataSource = objDT
         Me.ComboBoxTargetPackage.DisplayMember = "name"
         Me.ComboBoxTargetPackage.ValueMember = "package_id"
         Me.ComboBoxTargetPackage.SelectedValue = Me.Element.PackageID
-
         Me.ListBoxType.SelectedValue = "Class"
-
         Me.LoadAttributes()
     End Sub
     Private Sub LoadAttributes()
-        Dim objDS As DataSet
+        Dim objDT As DataTable
         Dim strSql As String
         strSql = String.Format("SELECT id as attribute_id, name FROM t_attribute WHERE object_id = {0} ORDER BY name", Me.ComboBoxElement.SelectedValue)
-        objDS = DLA2EAHelper.SQL2DataSet(strSql, Me.Repository)
-        If objDS.Tables.Count > 1 Then
-            Me.ListBoxAttributes.DataSource = objDS.Tables(1)
+        objDT = DLA2EAHelper.SQL2DataTable(strSql, Me.Repository)
+        If objDT.Rows.Count > 0 Then
+            Me.ListBoxAttributes.DataSource = objDT
             Me.ListBoxAttributes.DisplayMember = "name"
             Me.ListBoxAttributes.ValueMember = "attribute_id"
         End If
-
-
     End Sub
 
     Private Sub FrmIDEATable_Load(ByVal sender As Object, ByVal e As EventArgs) Handles Me.Load
@@ -78,24 +74,24 @@ Public Class FrmIDEATable
 
 
     Sub LoadExistingItemListBox()
-        Dim objDS As DataSet
+        Dim objDT As DataTable
         If Me.ListBoxType.SelectedIndex > -1 Then
             Dim strSelected As String
             strSelected = Me.ListBoxType.Items(Me.ListBoxType.SelectedIndex).ToString().ToUpper()
             Select Case strSelected
                 Case "CLASS"
-                    objDS = DLA2EAHelper.SQL2DataSet("SELECT object_id, name, object_type FROM t_object WHERE object_type = 'Class' AND stereotype IS NULL ORDER BY name", Me.Repository)
+                    objDT = DLA2EAHelper.SQL2DataTable("SELECT object_id, name, object_type FROM t_object WHERE object_type = 'Class' AND stereotype IS NULL ORDER BY name", Me.Repository)
                 Case "TABLE"
-                    objDS = DLA2EAHelper.SQL2DataSet("SELECT object_id, name, object_type FROM t_object WHERE stereotype = 'table' ORDER BY name", Me.Repository)
+                    objDT = DLA2EAHelper.SQL2DataTable("SELECT object_id, name, object_type FROM t_object WHERE stereotype = 'table' ORDER BY name", Me.Repository)
                 Case Else '"BUSINESS OBJECT"
-                    objDS = DLA2EAHelper.SQL2DataSet("SELECT object_id, name, object_type FROM t_object WHERE stereotype = 'ArchiMate_BusinessObject' ORDER BY name", Me.Repository)
+                    objDT = DLA2EAHelper.SQL2DataTable("SELECT object_id, name, object_type FROM t_object WHERE stereotype = 'ArchiMate_BusinessObject' ORDER BY name", Me.Repository)
             End Select
             'Me.ComboBoxExistingEntity.Items.Clear()
-            Me.ComboBoxExistingEntity.DataSource = objDS.Tables(1)
+            Me.ComboBoxExistingEntity.DataSource = objDT
             Me.ComboBoxExistingEntity.DisplayMember = "name"
             Me.ComboBoxExistingEntity.ValueMember = "object_id"
-            objDS = DLA2EAHelper.SQL2DataSet("SELECT object_id, name, object_type FROM t_object WHERE object_type = 'Class' AND stereotype IS NULL ORDER BY name", Me.Repository)
-            Me.ComboBoxExistingRefactor.DataSource = objDS.Tables(1)
+            objDT = DLA2EAHelper.SQL2DataTable("SELECT object_id, name, object_type FROM t_object WHERE object_type = 'Class' AND stereotype IS NULL ORDER BY name", Me.Repository)
+            Me.ComboBoxExistingRefactor.DataSource = objDT
             Me.ComboBoxExistingRefactor.DisplayMember = "name"
             Me.ComboBoxExistingRefactor.ValueMember = "object_id"
         End If

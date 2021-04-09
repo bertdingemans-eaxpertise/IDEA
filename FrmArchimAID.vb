@@ -16,6 +16,9 @@ Public Class FrmArchimAID
 
         End Set
     End Property
+    ''' <summary>
+    ''' Clear the combobox etc when you select a new stereotype
+    ''' </summary>
     Private Sub ClearListBoxConcepts()
         Me.ListBoxConcepts.Items.Clear()
         Me.ComboBoxConcept.Items.Clear()
@@ -24,6 +27,9 @@ Public Class FrmArchimAID
         Me.ButtonCreateOnDiagram.Enabled = False
         Me.ButtonViewBrowser.Enabled = False
     End Sub
+    ''' <summary>
+    ''' Add an array of implementation stereotypes
+    ''' </summary>
     Private Sub AddImplementation()
         ListBoxConcepts.Items.AddRange({"Deliverable", "Gap", "ImplementationEvent", "Plateau", "WorkPackage"})
     End Sub
@@ -31,74 +37,87 @@ Public Class FrmArchimAID
         ListBoxConcepts.Items.AddRange({"Assessment", "Driver", "Goal", "Meaning", "Outcome", "Stakeholder", "Requirement", "Principle", "Constraint", "Value", "Resource", "Capability", "Course Of Action"})
 
     End Sub
-
     Private Sub ButtonImplementation_Click(ByVal sender As Object, ByVal e As EventArgs) Handles ButtonImplementation.Click
         Me.ClearListBoxConcepts()
         Me.AddImplementation()
         Me.TabArchiMAID.SelectTab(1)
-
     End Sub
-
     Private Sub ButtonMotivation_Click(ByVal sender As Object, ByVal e As EventArgs) Handles ButtonMotivation.Click
         Me.ClearListBoxConcepts()
         Me.AddMotivation()
         Me.TabArchiMAID.SelectTab(1)
     End Sub
-
+    ''' <summary>
+    ''' Add an array of business structure stereotypes
+    ''' </summary>
     Sub AddBusinessStructure()
         ListBoxConcepts.Items.AddRange({"BusinessActor", "BusinessRole", "BusinessCollaboration", "BusinessInterface"})
     End Sub
-
+    ''' <summary>
+    ''' Add an array of business behaviour stereotypes
+    ''' </summary>
     Sub AddBusinessBehaviour()
         ListBoxConcepts.Items.AddRange({"BusinessProcess", "BusinessFunction", "BusinessInteraction", "BusinessService", "BusinessEvent"})
     End Sub
-
+    ''' <summary>
+    ''' Add an array of business passive stereotypes
+    ''' </summary>
     Sub AddBusinessPassive()
         ListBoxConcepts.Items.AddRange({"BusinessObject", "Contract", "Representation", "Product"})
     End Sub
-
+    ''' <summary>
+    ''' Add an array of application structure stereotypes
+    ''' </summary>
     Sub AddApplicationStructure()
         ListBoxConcepts.Items.AddRange({"ApplicationComponent", "ApplicationCollaboration", "ApplicationInterface"})
     End Sub
+    ''' <summary>
+    ''' Add an array of application behaviour stereotypes
+    ''' </summary>
 
     Sub AddApplicationBehaviour()
         ListBoxConcepts.Items.AddRange({"ApplicationProcess", "ApplicationFunction", "ApplicationInteraction", "ApplicationService", "ApplicationEvent"})
     End Sub
-
+    ''' <summary>
+    ''' Add an array of application passive stereotypes
+    ''' </summary>
     Sub AddApplicationPassive()
         ListBoxConcepts.Items.AddRange({"DataObject"})
     End Sub
+    ''' <summary>
+    ''' Add an array of technology structure stereotypes
+    ''' </summary>
     Sub AddTechnologyStructure()
         ListBoxConcepts.Items.AddRange({"Node", "Device", "SystemSoftware", "TechnologyCollaboration", "TechnologyInterface", "Path", "CommunicationNetwork", "Facility", "Equipment", "DistributionNetwork", "Material", "Location"})
     End Sub
+    ''' <summary>
+    ''' Add an array of technology behaviour stereotypes
+    ''' </summary>
 
     Sub AddTechnologyBehaviour()
         ListBoxConcepts.Items.AddRange({"TechnologyProcess", "TechnologyFunction", "TechnologyInteraction", "TechnologyService", "TechnologyEvent"})
     End Sub
-
+    ''' <summary>
+    ''' Add an array of technology passive stereotypes
+    ''' </summary>
     Sub AddTechnologyPassive()
         ListBoxConcepts.Items.AddRange({"Artifact", "TechnologyObject"})
     End Sub
-
-
     Private Sub ButtonBusinessStructure_Click(ByVal sender As Object, ByVal e As EventArgs) Handles ButtonBusinessStructure.Click
         Me.ClearListBoxConcepts()
         Me.AddBusinessStructure()
         Me.TabArchiMAID.SelectTab(1)
     End Sub
-
     Private Sub ButtonBusinessBehaviour_Click(ByVal sender As Object, ByVal e As EventArgs) Handles ButtonBusinessBehaviour.Click
         Me.ClearListBoxConcepts()
         Me.AddBusinessBehaviour()
         Me.TabArchiMAID.SelectTab(1)
     End Sub
-
     Private Sub ButtonBusinessPassive_Click(ByVal sender As Object, ByVal e As EventArgs) Handles ButtonBusinessPassive.Click
         Me.ClearListBoxConcepts()
         Me.AddBusinessPassive()
         Me.TabArchiMAID.SelectTab(1)
     End Sub
-
     Private Sub ButtonBusinessLayer_Click(ByVal sender As Object, ByVal e As EventArgs) Handles ButtonBusinessLayer.Click
         Me.ClearListBoxConcepts()
         Me.AddBusinessStructure()
@@ -106,26 +125,22 @@ Public Class FrmArchimAID
         Me.AddBusinessPassive()
         Me.TabArchiMAID.SelectTab(1)
     End Sub
-
     Private Sub ButtonApplicationStructure_Click(ByVal sender As Object, ByVal e As EventArgs) Handles ButtonApplicationStructure.Click
         Me.ClearListBoxConcepts()
         Me.AddApplicationStructure()
         Me.TabArchiMAID.SelectTab(1)
     End Sub
-
     Private Sub ButtonApplicationBehaviour_Click(ByVal sender As Object, ByVal e As EventArgs) Handles ButtonApplicationBehaviour.Click
         Me.ClearListBoxConcepts()
         Me.AddApplicationBehaviour()
         Me.TabArchiMAID.SelectTab(1)
         Me.ListBoxConcepts.SelectionMode = System.Windows.Forms.SelectionMode.MultiSimple
     End Sub
-
     Private Sub ButtonApplicationPassive_Click(ByVal sender As Object, ByVal e As EventArgs) Handles ButtonApplicationPassive.Click
         Me.ClearListBoxConcepts()
         Me.AddApplicationPassive()
         Me.TabArchiMAID.SelectTab(1)
     End Sub
-
     Private Sub ButtonApplication_Click(ByVal sender As Object, ByVal e As EventArgs) Handles ButtonApplication.Click
         Me.ClearListBoxConcepts()
         Me.AddApplicationStructure()
@@ -137,7 +152,9 @@ Public Class FrmArchimAID
     Private Sub ButtonSearch_Click(ByVal sender As Object, ByVal e As EventArgs) Handles ButtonSearch.Click
         DoSearch
     End Sub
-
+    ''' <summary>
+    ''' Search for the selected elements based on the keyword and the selected archimate concepts
+    ''' </summary>
     Private Sub DoSearch()
         Dim strSql As String
         'Repository.CreateOutputTab("IDEA")
@@ -238,30 +255,24 @@ Public Class FrmArchimAID
         Catch ex As Exception
             Repository.WriteOutput("IDEA", ex.Message, 0)
         End Try
-
-
     End Sub
-
     Private Sub ButtonTechnologyPassive_Click(ByVal sender As Object, ByVal e As EventArgs) Handles ButtonTechnologyPassive.Click
         Me.ClearListBoxConcepts()
         Me.AddTechnologyPassive()
         Me.TabArchiMAID.SelectTab(1)
     End Sub
-
     Private Sub ButtonTechnologyBehaviour_Click(ByVal sender As Object, ByVal e As EventArgs) Handles ButtonTechnologyBehaviour.Click
         Me.ClearListBoxConcepts()
         Me.AddTechnologyBehaviour()
         Me.TabArchiMAID.SelectTab(1)
 
     End Sub
-
     Private Sub ButtonTechnologyStructure_Click(ByVal sender As Object, ByVal e As EventArgs) Handles ButtonTechnologyStructure.Click
         Me.ClearListBoxConcepts()
         Me.AddTechnologyStructure()
         Me.TabArchiMAID.SelectTab(1)
 
     End Sub
-
     Private Sub ButtonTechnology_Click(ByVal sender As Object, ByVal e As EventArgs) Handles ButtonTechnology.Click
         Me.ClearListBoxConcepts()
         Me.AddTechnologyStructure()
@@ -282,11 +293,8 @@ Public Class FrmArchimAID
         Catch ex As Exception
             DLA2EAHelper.Error2Log(ex)
         End Try
-
     End Sub
-
     Private Sub TextBoxSearch_TextChanged(sender As Object, e As EventArgs) Handles TextBoxSearch.TextChanged
         DoSearch()
     End Sub
-
 End Class

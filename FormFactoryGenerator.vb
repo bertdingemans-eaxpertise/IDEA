@@ -375,12 +375,12 @@ Namespace DLAFormfactory
         Dim strSql As String
         Try
             strSql = String.Format("SELECT object_id FROM T_OBJECT WHERE stereotype IS NULL AND name = '{0}' ", type)
-            Dim objDS As DataSet
-            objDS = DLA2EAHelper.SQL2DataSet(strSql, Me.Repository)
-            If objDS.Tables.Count > 1 Then
-                strElementId = objDS.Tables(1).Rows(0).Item("object_id").ToString()
-            End If
-        Catch ex As Exception
+                Dim objDT As DataTable
+                objDT = DLA2EAHelper.SQL2DataTable(strSql, Me.Repository)
+                If objDT.Rows.Count > 0 Then
+                    strElementId = objDT.Rows(0).Item("object_id").ToString()
+                End If
+            Catch ex As Exception
             DLA2EAHelper.Error2Log(ex)
         End Try
         Return strElementId

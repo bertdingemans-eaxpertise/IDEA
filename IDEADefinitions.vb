@@ -35,7 +35,9 @@ Public Class IDEADefinitions
             DLA2EAHelper.Error2Log(ex)
         End Try
     End Sub
-
+    ''' <summary>
+    ''' Load from settings this can be an IDEASettings artifact in the repository or via the user settings
+    ''' </summary>
     Sub LoadFromSettings()
         Dim oDT As DataTable
         Try
@@ -94,68 +96,98 @@ Public Class IDEADefinitions
                                    "INSERT INTO MGT.DynamicLoadDataVault_MappingInput (LoadDate,UserName,RecordSource,SourceSchema,SourceTableName,StageSchema,StageName,TargetSchema,TargetTableName,Rol,SourceFilter,CreateView) VALUES (CONVERT(DATETIME2(6),GETDATE(),121),CURRENT_USER,'#sourcerecordsource#','#sourceschema#','#sourcetable#','#sourceschema#','#sourcetable#_vw','#targetschema#','#targettable#','#connectorname#','#connectorfilter#','1')")
 
             'Housekeeping
-            Me.AddInitialSQL("HousekeepingLink", "Housekeeping", "select bom_object.bom_id
-, bom_object.bom_naam
-, bom_object.bewaartermijn
-, bom_object.bewaartermijneenheid
-, bom_object.bewaartermijnvanafwanneer
-, table_object.object_name as [tabelnaam] 
-, dbo.nsda_gettaggedvalue(table_object.object_id, 'Owner') as [tableschema]
---, tablediagramobjects.Diagram_ID
-from nsda_object as [ldm_object] 
-, nsda_bombewaartermijn as [bom_object] 
-, nsda_object as [table_object] 
-, nsda_connector as [flcon]
-, nsda_connector as [lccon]
-, t_diagramobjects as tablediagramobjects 
-where flcon.end_object_id = ldm_object.object_id and flcon.start_object_id = table_object.object_id
-and lccon.start_object_id = ldm_object.object_id 
-and lccon.end_object_id = bom_object.bom_id 
-and ldm_object.object_type = 'Class' 
-and table_object.object_type = 'table' 
-and ldm_object.object_name is not null 
-and table_object.object_id = tablediagramobjects.object_id 
-and tablediagramobjects.diagram_id = #diagram_id#",
-            "INSERT INTO [PBD].[META_FBDOM_DV_Relaties] ([FBDOM_id], [FBDOMNaam], [bewaartermijn], [bewaartermijneenheid], [bewaartermijnvanafwanneer], [Tabelowner],  [Tabelnaam] ) 
-            VALUES ('#bom_id#', '#bom_naam#', '#bewaartermijn#', '#bewaartermijneenheid#', '#bewaartermijnvanafwanneer#', '#tableschema#',  '#tabelnaam#' );")
+            Me.AddInitialSQL("HousekeepingBewaarTermijn", "Housekeeping",
+                             "select bom_object.bom_id
+                            , bom_object.bom_naam
+                            , bom_object.bewaartermijn
+                            , bom_object.bewaartermijneenheid
+                            , bom_object.bewaartermijnvanafwanneer
+                            , table_object.object_name as [tabelnaam] 
+                            , dbo.nsda_gettaggedvalue(table_object.object_id, 'Owner') as [tableschema]
+                            from nsda_object as [ldm_object] 
+                            , nsda_bombewaartermijn as [bom_object] 
+                            , nsda_object as [table_object] 
+                            , nsda_connector as [flcon]
+                            , nsda_connector as [lccon]
+                            , t_diagramobjects as tablediagramobjects 
+                            where flcon.end_object_id = ldm_object.object_id 
+                            and flcon.start_object_id = table_object.object_id
+                            and lccon.start_object_id = ldm_object.object_id 
+                            and lccon.end_object_id = bom_object.bom_id 
+                            and ldm_object.object_type = 'Class' 
+                            and table_object.object_type = 'table' 
+                            and ldm_object.object_name is not null 
+                            and table_object.object_id = tablediagramobjects.object_id 
+                            and tablediagramobjects.diagram_id = #diagram_id#",
+                            "INSERT INTO [PBD].[META_FBDOM_DV_Relaties] ([FBDOM_id], [FBDOMNaam], [bewaartermijn], [bewaartermijneenheid], [bewaartermijnvanafwanneer], [Tabelowner],  [Tabelnaam] ) 
+                            VALUES ('#bom_id#', '#bom_naam#', '#bewaartermijn#', '#bewaartermijneenheid#', '#bewaartermijnvanafwanneer#', '#tableschema#',  '#tabelnaam#' );")
+
+            Me.AddInitialSQL("HousekeepingBOM", "Housekeeping",
+                             "select bom_object.bom_id
+                            , bom_object.bom_naam
+                            , table_object.object_name as [tabelnaam] 
+                            , dbo.nsda_gettaggedvalue(table_object.object_id, 'Owner') as [tableschema]
+                            from nsda_object as [ldm_object] 
+                            , nsda_bombewaartermijn as [bom_object] 
+                            , nsda_object as [table_object] 
+                            , nsda_connector as [flcon]
+                            , nsda_connector as [lccon]
+                            , t_diagramobjects as tablediagramobjects 
+                            where flcon.end_object_id = ldm_object.object_id 
+                            and flcon.start_object_id = table_object.object_id
+                            and lccon.start_object_id = ldm_object.object_id 
+                            and lccon.end_object_id = bom_object.bom_id 
+                            and ldm_object.object_type = 'Class' 
+                            and table_object.object_type = 'table' 
+                            and ldm_object.object_name is not null 
+                            and table_object.object_id = tablediagramobjects.object_id 
+                            and tablediagramobjects.diagram_id = #diagram_id#",
+                            "INSERT INTO [PBD].[META_FBDOM_DV_Relaties] ([FBDOM_id], [FBDOMNaam], [Tabelowner],  [Tabelnaam] ) 
+                            VALUES ('#bom_id#', '#bom_naam#', '#tableschema#',  '#tabelnaam#' );")
 
             Me.AddInitialSQL("HousekeepingPDM", "Housekeeping",
                              "select distinct dbo.nsda_gettaggedvalue(parent_object.object_id, 'Owner') as [parentowner]
-            , parent_object.object_name as [parentname]
-            ,  dbo.nsda_gettaggedvalue(child_object.object_id, 'Owner') as [childowner]
-            , child_object.object_name as [childname] 
-            from [nsda_object] as [parent_object], nsda_object as [child_object], nsda_connector as [con], t_diagramobjects as parentdiagramlinks 
-            where con.start_object_id = child_object.object_id and con.end_object_id = parent_object.object_id and parent_object.object_type = 'table' and child_object.object_type = 'table' and con.destcard = '1' and parent_object.object_name is not null and parent_object.object_id = parentdiagramlinks.object_id and parentdiagramlinks.diagram_id = #diagram_id# 
-            union 
-            select distinct dbo.nsda_gettaggedvalue(parent_object.object_id, 'Owner') as [parentowner], parent_object.object_name as [parentname]
-            , dbo.nsda_gettaggedvalue(child_object.object_id, 'Owner') as [childowner]
-            , child_object.object_name as [childname] 
-            from [nsda_object] as [parent_object], nsda_object as [child_object], nsda_connector as [con] , t_diagramobjects as parentdiagramlinks 
-            where con.end_object_id = child_object.object_id and con.start_object_id = parent_object.object_id and parent_object.object_type = 'table' and child_object.object_type = 'table' and con.destcard = '1' and parent_object.object_name is not null and parent_object.object_id = parentdiagramlinks.object_id and parentdiagramlinks.diagram_id = #diagram_id# 
-             ",
-            "INSERT INTO [PBD].[META_DV_TABELRELATIES] ([parentowner], [parentname], [childowner],  [childname] ) VALUES ('#parentowner#', '#parentname#',  '#childowner#',  '#childname#' );")
+                                , parent_object.object_name as [parentname]
+                                , dbo.nsda_gettaggedvalue(child_object.object_id, 'Owner') as [childowner]
+                                , child_object.object_name as [childname] 
+                                from [nsda_object] as [parent_object], nsda_object as [child_object]
+                                , nsda_connector as [con], t_diagramobjects as parentdiagramlinks
+                                , t_diagramobjects as childdiagramlinks 
+                                where con.start_object_id = child_object.object_id 
+                                and con.end_object_id = parent_object.object_id 
+                                and parent_object.object_type = 'table' 
+                                and child_object.object_type = 'table' 
+                                and con.destcard = '1' 
+                                and parent_object.object_name is not null 
+                                and parent_object.object_id = parentdiagramlinks.object_id 
+                                and parentdiagramlinks.diagram_id = #diagram_id# 
+                                and child_object.object_id = childdiagramlinks.object_id 
+                                and childdiagramlinks.diagram_id = #diagram_id# 
+                                union 
+                                select distinct dbo.nsda_gettaggedvalue(parent_object.object_id, 'Owner') as [parentowner]
+                                , parent_object.object_name as [parentnam3]
+                                , dbo.nsda_gettaggedvalue(child_object.object_id, 'Owner') as [childowner]
+                                , child_object.object_name as [childname] 
+                                from [nsda_object] as [parent_object], nsda_object as [child_object], nsda_connector as [con]
+                                , t_diagramobjects as parentdiagramlinks, t_diagramobjects as childdiagramlinks
+                                where con.end_object_id = child_object.object_id 
+                                and con.start_object_id = parent_object.object_id 
+                                and parent_object.object_type = 'table' 
+                                and child_object.object_type = 'table' 
+                                and con.destcard = '1' 
+                                and parent_object.object_name is not null 
+                                and parent_object.object_id = parentdiagramlinks.object_id 
+                                and parentdiagramlinks.diagram_id = #diagram_id# 
+                                and child_object.object_id = childdiagramlinks.object_id 
+                                and childdiagramlinks.diagram_id = #diagram_id#",
+                            "INSERT INTO [PBD].[META_DV_TABELRELATIES] ([parentowner], [parentname], [childowner],  [childname] ) 
+                            VALUES ('#parentowner#', '#parentname#',  '#childowner#',  '#childname#' );")
         Catch ex As Exception
             MsgBox("Error in setting config", MsgBoxStyle.OkOnly)
         End Try
 
     End Sub
-    ''' <summary>
-    ''' Zet de dataset om naar een xml string tekst die opgeslagen wordt in bijvoorbeeld de config file
-    ''' </summary>
-    ''' <returns></returns>
-    'Function SaveDataSetXML(strFile As String) As String
-    '    Dim strWriter As New StringWriter()
-    '    Try
-    '        Me.oIDEADefinitions.WriteXml(strWriter, XmlWriteMode.IgnoreSchema)
-    '        If strFile.Length > 0 Then
-    '            Me.oIDEADefinitions.WriteXml(strFile, XmlReadMode.IgnoreSchema)
-    '        End If
-    '        Return strWriter.ToString()
-    '    Catch ex As Exception
-    '        DLA2EAHelper.Error2Log(ex)
-    '    End Try
-    '    Return ""
-    'End Function
+
     ''' <summary>
     ''' Zoek in een dataset collectie naar een filter, activeer deze en retourneer de gefilterde subset
     ''' </summary>
@@ -173,6 +205,7 @@ and tablediagramobjects.diagram_id = #diagram_id#",
         End Try
         Return Nothing
     End Function
+
     ''' <summary>
     ''' utility routine om de waarde van een configitem op te vragen op basis van de naam
     ''' Indien de naam niet gevonden wordt wordt een lege string geretourneerd
@@ -202,12 +235,24 @@ and tablediagramobjects.diagram_id = #diagram_id#",
         End Try
         Return Nothing
     End Function
+    ''' <summary>
+    ''' Create the initial settings for the IDEA AddOn so later the user can modify it via the settings window
+    ''' </summary>
+    ''' <param name="Name"></param>
+    ''' <param name="Value"></param>
+    ''' <param name="Type"></param>
     Sub AddInitialSetting(Name As String, Value As String, Optional Type As String = "Config")
         If Me.GetSettingValue(Name).Length = 0 Then
             Me.AddSetting(Name, Value)
         End If
     End Sub
-
+    ''' <summary>
+    ''' Create an initial SQL statement for the diagram helper screen
+    ''' </summary>
+    ''' <param name="Name"></param>
+    ''' <param name="Type"></param>
+    ''' <param name="Statement"></param>
+    ''' <param name="Template"></param>
     Sub AddInitialSQL(Name As String, Type As String, Statement As String, Template As String)
         If Me.GetFilteredTable("SQL-Statement", String.Format(" Name = '{0}' ", Name)).Rows.Count = 0 Then
             Me.AddStatement(Name, Type, Statement, Template)

@@ -175,17 +175,17 @@ Public Class FrmIdeaDiagram
             strElements += ", " + item("id")
         Next
 
-        Dim objDS As DataSet
+        Dim objDT As DataTable
         Dim strSql As String
         strSql = String.Format("SELECT t_attribute.ea_guid as attribute_id, t_attribute.name + ' (' + t_object.name + ')' as attrfullname, t_object.name as object_name, t_attribute.name as attribute_name FROM t_attribute, t_object WHERE t_attribute.object_id = t_object.object_id AND t_object.object_id IN( {0} ) ORDER BY 3, 2", strElements)
         strSql = DLA2EAHelper.SQLForEAP(strSql, Me.Repository)
-        objDS = DLA2EAHelper.SQL2DataSet(strSql, Me.Repository)
+        objDT = DLA2EAHelper.SQL2DataTable(strSql, Me.Repository)
 
-        If objDS.Tables.Count > 1 Then
+        If objDT.Rows.Count > 0 Then
             If (isSource = True And CheckBoxMapTarget.Checked = False) Or (isSource = False And CheckBoxMapTarget.Checked = True) Then
-                Me.DataGridViewMapping.Rows.Add(objDS.Tables(1).Rows.Count)
+                Me.DataGridViewMapping.Rows.Add(objDT.Rows.Count)
             End If
-            cmb.DataSource = objDS.Tables(1)
+            cmb.DataSource = objDT
             cmb.DisplayMember = "attrfullname"
             cmb.ValueMember = "attribute_id"
             cmb.Width = 300
@@ -195,16 +195,11 @@ Public Class FrmIdeaDiagram
                 Me.DataGridViewMapping.Columns.Add(cmb)
             End If
             If isSource Then
-                Me.tblSource = objDS.Tables(1)
+                Me.tblSource = objDT
             Else
-                Me.tblTarget = objDS.Tables(1)
+                Me.tblTarget = objDT
             End If
-
             SelectDeSelectMapping(False)
-            'This creates a list of target ids used later for processing in the existing mappings routine
-            If Not isSource Then
-
-            End If
 
             'laden van de data
             If CheckBoxLoadData.Checked Then
@@ -214,7 +209,7 @@ Public Class FrmIdeaDiagram
                     While intTeller < DataGridViewMapping.Rows.Count - 1
                         row = DataGridViewMapping.Rows(intTeller)
                         Dim comboBoxCell As DataGridViewComboBoxCell = CType((row.Cells(name)), DataGridViewComboBoxCell)
-                        comboBoxCell.Value = objDS.Tables(1).Rows(intTeller).Item("attribute_id")
+                        comboBoxCell.Value = objDT.Rows(intTeller).Item("attribute_id")
                         Dim mergerCell As DataGridViewComboBoxCell = CType((row.Cells("Merger")), DataGridViewComboBoxCell)
                         mergerCell.Value = "No"
                         intTeller += 1
@@ -222,7 +217,7 @@ Public Class FrmIdeaDiagram
                 Else
                     Me.strTargetIds = ""
                     Dim objDR As DataRow
-                    For Each objDR In objDS.Tables(1).Rows
+                    For Each objDR In objDT.Rows
                         strTargetIds += objDR.Item("attribute_id") + ", "
                     Next
                 End If
@@ -667,50 +662,67 @@ Public Class FrmIdeaDiagram
     Private Sub LoadSQLStatements()
         Dim oID As New IDEADefinitions()
         Dim oStatementDT As DataTable = oID.GetTable("SQL-Statement")
-        Me.ComboBoxStatement.DataSource = oStatementDT
-        Me.ComboBoxStatement.DisplayMember = "name"
-        Me.ComboBoxStatement.ValueMember = "name"
+        Me.DataGridViewSQL.DataSource = oStatementDT
     End Sub
     Private Sub ButtonLoad_Click(ByVal sender As Object, ByVal e As EventArgs) Handles ButtonLoad.Click
         Try
             Dim oID As New IDEADefinitions()
-            Dim oStatementDT As DataTable = oID.GetFilteredTable("SQL-Statement", String.Format("name = '{0}' ", ComboBoxStatement.SelectedValue))
-            If oStatementDT.Rows.Count > 0 Then
-                Dim oRow As DataRow = oStatementDT.Rows(0)
-                Dim strSQL As String = oRow("Statement").ToString().Replace("#diagram_id#", Diagram.DiagramID)
+            If DataGridViewSQL.SelectedRows.Count > 0 Then
+                Dim oRow As DataGridViewRow = DataGridViewSQL.CurrentRow
+                Dim strSQL As String = oRow.Cells("Statement").Value.ToString().Replace("#diagram_id#", Diagram.DiagramID)
                 Me.DataGridViewStatement.DataSource = DLA2EAHelper.EAString2DataTable(Me.Repository.SQLQuery(strSQL))
-                Me.TextBoxStatement.Text = oRow("Statement")
-                Me.TextBoxTemplate.Text = oRow("Template")
+                Me.TextBoxStatement.Text = oRow.Cells("Statement").Value.ToString()
+                Me.TextBoxTemplate.Text = oRow.Cells("Template").Value.ToString()
             End If
         Catch ex As Exception
             MsgBox(ex.ToString(), MsgBoxStyle.Critical)
         End Try
     End Sub
+    Private Function SQL2File(Statement As String, Template As String, filename As String) As String
+        Dim Helper As New DLADataSetHelper()
+        Dim strSQL As String
+        Dim oID As New IDEADefinitions()
+
+        Helper.DataTable = DLA2EAHelper.EAString2DataTable(Me.Repository.SQLQuery(Statement.Replace("#diagram_id#", Diagram.DiagramID)))
+        strSQL = Helper.DataTable2String(Template)
+        If String.IsNullOrEmpty(filename) Then
+            MsgBox("PLease select a file to export to first", MsgBoxStyle.Critical)
+        Else
+            Dim strFile As String = oID.GetSettingValue("ReleaseDirectory") + "\" + filename + ".sql"
+            DLA2EAHelper.String2File(strSQL, strFile)
+            Return strFile + vbCrLf
+        End If
+        Return "No file created!!"
+    End Function
+
 
     Private Sub ButtonMakeSQL_Click(ByVal sender As Object, ByVal e As EventArgs) Handles ButtonMakeSQL.Click
         Dim Helper As New DLADataSetHelper()
         Dim strColumnSql As String = ""
         Dim strTableSql As String = ""
         Dim oID As New IDEADefinitions()
+        Dim strResult As String = ""
         Try
-            If IsNothing(Me.DataGridViewStatement.DataSource) Then
-                MsgBox("PLease load data first", MsgBoxStyle.Critical)
+
+            If Me.CheckBoxCreateAll.Checked Then
+                For Each oRow As DataRow In Me.DataGridViewSQL.DataSource.Rows
+                    strResult += SQL2File(oRow("statement"), oRow("template"), oRow("name"))
+                Next
             Else
-                Helper.DataTable = Me.DataGridViewStatement.DataSource
-                strColumnSql = Helper.DataTable2String(Me.TextBoxTemplate.Text)
+                If DataGridViewSQL.SelectedRows.Count > 0 Then
+                    strResult += SQL2File(DataGridViewSQL.CurrentRow.Cells("Statement").Value.ToString(), DataGridViewSQL.CurrentRow.Cells("Template").Value.ToString(), DataGridViewSQL.CurrentRow.Cells("Name").Value.ToString())
+                Else
+                    MsgBox("Please select a row first in the grid of SQL statements", MsgBoxStyle.Critical)
+                End If
             End If
-            Dim strFile As String = oID.GetSettingValue("ReleaseDirectory") + "\" + Me.ComboBoxStatement.SelectedValue + ".sql"
-            If String.IsNullOrEmpty(strFile) Then
-                MsgBox("PLease select a file to export to first", MsgBoxStyle.Critical)
-            Else
-                DLA2EAHelper.String2File(strTableSql + vbCrLf + strColumnSql, strFile)
-                MsgBox("SQL file can be found here " + strFile)
+            If strResult.Length > 0 Then
+                Me.Close()
+                MsgBox(strResult + vbCrLf + "files  created", MsgBoxStyle.OkOnly)
             End If
         Catch ex As Exception
             MsgBox(ex.ToString(), MsgBoxStyle.Critical)
             DLA2EAHelper.Error2Log(ex)
         End Try
-
     End Sub
 
     Private Sub ButtonLockElements_Click(ByVal sender As Object, ByVal e As EventArgs) Handles ButtonLockElements.Click
@@ -782,13 +794,13 @@ Public Class FrmIdeaDiagram
             Dim Element As EA.Element
             Element = Me.Repository.GetElementByID(oDO.ElementID)
             Dim StereoType As String = Element.Stereotype.ToString().ToUpper().Replace("ARCHIMATE_", "")
-            If StereoType.Contains("ARTIFACT") Or StereoType.Contains("OBJECT") Then
+            If StereoType.Contains("ARTIFACT") Or StereoType.Contains("Object") Then
                 oDO.BorderColor = IIf(CheckBoxRestoreColor.Checked, 0, 255)
             End If
-            If StereoType.Contains("EVENT") Or StereoType.Contains("PROCESS") Or StereoType.Contains("FUNCTION") Or StereoType.Contains("SERVICE") Then
+            If StereoType.Contains("Event") Or StereoType.Contains("PROCESS") Or StereoType.Contains("Function") Or StereoType.Contains("SERVICE") Then
                 oDO.BorderColor = IIf(CheckBoxRestoreColor.Checked, 0, 16748571)
             End If
-            If StereoType.Contains("ROLE") Or StereoType.Contains("ACTOR") Or StereoType.Contains("INTERFACE") Or StereoType.Contains("COMPONENT") _
+            If StereoType.Contains("ROLE") Or StereoType.Contains("ACTOR") Or StereoType.Contains("Interface") Or StereoType.Contains("COMPONENT") _
                 Or StereoType.Contains("PATH") Or StereoType.Contains("SYSTEMSOFTWARE") Or StereoType.Contains("NODE") Or StereoType.Contains("DEVICE") Then
                 oDO.BorderColor = IIf(CheckBoxRestoreColor.Checked, 0, 7451452)
             End If
@@ -796,7 +808,16 @@ Public Class FrmIdeaDiagram
         Next
     End Sub
 
-    Private Sub TabPage4_Click(sender As Object, e As EventArgs) Handles TabPage4.Click
 
+    Private Sub TextBoxFilter_TextChanged(sender As Object, e As EventArgs) Handles TextBoxFilter.TextChanged
+        Dim oDV As New DataView(Me.DataGridViewSQL.DataSource)
+        If Me.TextBoxFilter.Text.Length > 0 Then
+            Dim Filter As String = String.Format(" name Like '%{0}%' or type LIKE '%{0}%'  ", Me.TextBoxFilter.Text)
+                    oDV.RowFilter = Filter
+            Me.DataGridViewSQL.DataSource = oDV.ToTable()
+        Else
+            Dim oID As New IDEADefinitions()
+            Me.DataGridViewSQL.DataSource = oID.GetTable("SQL-Statement")
+        End If
     End Sub
 End Class

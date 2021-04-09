@@ -418,14 +418,6 @@ Public Class FrmImportExcel
             End If
         Next
     End Sub
-
-    Private Sub ButtonHollandCasino_Click(sender As Object, e As EventArgs)
-        Dim Excel2EA As New Excel2EAImport()
-        Excel2EA.Repository = Me.objRepo
-        Excel2EA.DTable = Me.objDT
-        Excel2EA.HollandCasino()
-    End Sub
-
     Private Sub ButtonKilMan_Click(sender As Object, e As EventArgs) Handles ButtonKilMan.Click
         Dim Excel2EA As New Excel2EAImport()
         Excel2EA.Repository = Me.objRepo

@@ -6,7 +6,6 @@ Namespace DLAFormfactory
     ''' </summary>
     Public Class DLADataSetHelper
         Protected DataSet As DataSet
-
         Public Sub New()
             Me.DataSet = New DataSet("Conversion")
         End Sub
@@ -26,6 +25,10 @@ Namespace DLAFormfactory
         ''' Active datatable in a dataset
         ''' </summary>
         Private _DataTable As DataTable
+        ''' <summary>
+        ''' Set or get a datatable
+        ''' </summary>
+        ''' <returns></returns>
         Public Property DataTable() As DataTable
             Get
                 Return _DataTable

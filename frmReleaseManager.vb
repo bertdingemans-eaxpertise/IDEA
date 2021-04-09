@@ -26,25 +26,22 @@ Public Class frmReleaseManager
     End Sub
 
     Private Sub LoadBaseLines()
-        Dim objDS As DataSet
+        Dim objDT As DataTable
         Dim strSql As String
         strSql = String.Format("SELECT DocID, Version FROM t_document WHERE DocType = 'BaseLine' AND ElementID ='{0}' ", Me.ComboBoxPackage.SelectedValue)
-        objDS = DLA2EAHelper.SQL2DataSet(strSql, Me.Repository)
-        If objDS.Tables.Count > 1 Then
-            Me.ComboBoxBaseline.DataSource = objDS.Tables(1)
-            If objDS.Tables(1).Rows.Count > 0 Then
-                Me.ComboBoxBaseline.DisplayMember = "version"
-                Me.ComboBoxBaseline.ValueMember = "DocID"
-            End If
-        Else
-            Me.ComboBoxBaseline.DataSource = objDS.Tables(0)
+        objDT = DLA2EAHelper.SQL2DataTable(strSql, Me.Repository)
+        If objDT.Rows.Count > 0 Then
+            Me.ComboBoxBaseline.DataSource = objDT
+            Me.ComboBoxBaseline.DisplayMember = "version"
+            Me.ComboBoxBaseline.ValueMember = "DocID"
         End If
+
     End Sub
 
     Public Sub LoadPackage()
-        Dim objDS As DataSet
-        objDS = DLA2EAHelper.SQL2DataSet("SELECT ea_guid as packageguid, name FROM t_package ORDER BY 2 ", Me.Repository)
-        Me.ComboBoxPackage.DataSource = objDS.Tables(1)
+        Dim objDT As DataTable
+        objDT = DLA2EAHelper.SQL2DataTable("SELECT ea_guid as packageguid, name FROM t_package ORDER BY 2 ", Me.Repository)
+        Me.ComboBoxPackage.DataSource = objDT
         Me.ComboBoxPackage.DisplayMember = "name"
         Me.ComboBoxPackage.ValueMember = "packageguid"
     End Sub

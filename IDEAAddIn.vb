@@ -5,6 +5,10 @@ Imports System
 Imports TEA.DLAFormfactory
 
 Namespace TEA
+    ''' <summary>
+    ''' Connector class for the menu options etcetera for the AddOn
+    ''' Here all the connection points from the EA application are defined
+    ''' </summary>
     Public Class IDEAAddIn
         ' define menu constants
         Const menuDeduplicator As String = "Deduplicator "
@@ -27,26 +31,42 @@ Namespace TEA
         'Public Function EA_OnPostNewElement(ByVal Repository As EA.Repository, ByVal Info As EA.EventProperties) As Boolean
         '    Return True
         'End Function
-
+        ''' <summary>
+        ''' When an element is deleted first check for the wastebin function in IDEA
+        ''' </summary>
+        ''' <param name="Repository"></param>
+        ''' <param name="Info"></param>
+        ''' <returns></returns>
         Function EA_OnPreDeleteElement(Repository As EA.Repository, Info As EA.EventProperties) As Boolean
             Dim intTeller As Int32 = 0
             Dim blnReturn As Boolean = True
             While intTeller < Info.Count
                 blnReturn = blnReturn And WasteBin.WasteBinElement(Repository, Info.Get(intTeller).Value)
-            intTeller += 1
+                intTeller += 1
             End While
             Repository.EnableUIUpdates = False
             Repository.RefreshModelView(Repository.GetTreeSelectedPackage().PackageID)
             Repository.EnableUIUpdates = True
             Return blnReturn
         End Function
+        ''' <summary>
+        ''' When a package is deleted first check for the wastebin function in IDEA
+        ''' </summary>
+        ''' <param name="Repository"></param>
+        ''' <param name="Info"></param>
+        ''' <returns></returns>
         Function EA_OnPreDeletePackage(Repository As EA.Repository, Info As EA.EventProperties) As Boolean
             Return WasteBin.WasteBinPackage(Repository, Info.Get(0).Value)
         End Function
         'Public Overridable Function EA_OnPostNewConnector(ByVal Repository As EA.Repository, ByVal Info As EA.EventProperties) As Boolean
-
         '    Return False
         'End Function
+
+        ''' <summary>
+        ''' Check for the diagram helpers to see if they need to be opened
+        ''' </summary>
+        ''' <param name="Repository"></param>
+        ''' <param name="DiagramID"></param>
         Public Overridable Sub EA_OnPostOpenDiagram(ByVal Repository As EA.Repository, ByVal DiagramID As Integer)
             Try
                 If My.Settings.ShowAidOnDiagramOpen = True Then
@@ -64,8 +84,6 @@ Namespace TEA
             Catch ex As Exception
                 DLA2EAHelper.Error2Log(ex)
             End Try
-
-
         End Sub
         ''' <summary>
         ''' Save the diagram direct to a file
@@ -95,13 +113,26 @@ Namespace TEA
                 Return False
             End Try
         End Function
-
+        ''' <summary>
+        ''' check of the IDEA menu needs to be enabled (when a project is opened) or not
+        ''' </summary>
+        ''' <param name="Repository"></param>
+        ''' <param name="Location"></param>
+        ''' <param name="MenuName"></param>
+        ''' <param name="ItemName"></param>
+        ''' <param name="IsEnabled"></param>
+        ''' <param name="IsChecked"></param>
         Public Sub EA_GetMenuState(ByVal Repository As EA.Repository, ByVal Location As String, ByVal MenuName As String, ByVal ItemName As String, ByRef IsEnabled As Boolean, ByRef IsChecked As Boolean)
             If Not IsProjectOpen(Repository) Then
                 ' If no open project, disable all menu options
                 IsEnabled = False
             End If
         End Sub
+        ''' <summary>
+        ''' Activate the specific helper window based on the stereotype of the active element
+        ''' </summary>
+        ''' <param name="Repository"></param>
+        ''' <param name="Element"></param>
         Private Sub OpenFormForElement(ByVal Repository As EA.Repository, ByVal Element As EA.Element)
             Try
                 Select Case Element.Stereotype.ToUpper
@@ -138,6 +169,14 @@ Namespace TEA
             End Try
 
         End Sub
+        ''' <summary>
+        ''' Create the menu's for the IDEA AddOn menu, the explorer and the diagram canvas
+        ''' the array of options is dynamically created based on the user settings
+        ''' </summary>
+        ''' <param name="Repository"></param>
+        ''' <param name="Location"></param>
+        ''' <param name="MenuName"></param>
+        ''' <returns></returns>
         Public Function EA_GetMenuItems(ByVal Repository As EA.Repository, ByVal Location As String, ByVal MenuName As String) As Object
             Dim menuList As New List(Of String)
 
@@ -202,7 +241,13 @@ Namespace TEA
             End Try
             Return ""
         End Function
-
+        ''' <summary>
+        ''' Handle the click of a menu item and call the relevant underlying routine
+        ''' </summary>
+        ''' <param name="Repository"></param>
+        ''' <param name="Location"></param>
+        ''' <param name="MenuName"></param>
+        ''' <param name="ItemName"></param>
         Public Sub EA_MenuClick(ByVal Repository As EA.Repository, ByVal Location As String, ByVal MenuName As String, ByVal ItemName As String)
             Try
                 Select Case ItemName
@@ -318,12 +363,17 @@ Namespace TEA
                         oWnd.Repository = Repository
                         oWnd.Show()
                 End Select
-
             Catch ex As Exception
                 DLA2EAHelper.Error2Log(ex)
             End Try
 
         End Sub
+        ''' <summary>
+        ''' Call the deduplicator check screen when this is activated
+        ''' </summary>
+        ''' <param name="Repository"></param>
+        ''' <param name="sGuid"></param>
+        ''' <param name="oType"></param>
         Public Sub EA_OnNotifyContextItemModified(ByVal Repository As EA.Repository, ByVal sGuid As String, ByVal oType As EA.ObjectType)
             Dim oElement As EA.Element
             Try
@@ -345,7 +395,6 @@ Namespace TEA
             Catch ex As Exception
                 DLA2EAHelper.Error2Log(ex)
             End Try
-
         End Sub
         Public Sub EA_Disconnect()
             GC.Collect()

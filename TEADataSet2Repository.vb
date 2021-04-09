@@ -119,92 +119,84 @@ Namespace DLAFormfactory
     Public Function FindElement(ByVal name As String) As EA.Element
         Dim objPack As EA.Package
         Dim objElement As EA.Element
-
-        Try
-            objPack = _Repository.GetTreeSelectedPackage()
-            Dim strSql As String
-            strSql = String.Format("SELECT object_id FROM t_object WHERE name = '{0}' ", name)
-            Dim objDS As DataSet
-            objDS = DLA2EAHelper.SQL2DataSet(strSql, Me.Repository)
-            If objDS.Tables.Count > 0 Then
-                If objDS.Tables(1).Rows.Count = 1 Then
-                    objElement = Me.Repository.GetElementByID(objDS.Tables(1).Rows(0).Item("object_id"))
+            Try
+                objPack = _Repository.GetTreeSelectedPackage()
+                Dim strSql As String
+                strSql = String.Format("SELECT object_id FROM t_object WHERE name = '{0}' ", name)
+                Dim objDT As DataTable
+                objDT = DLA2EAHelper.SQL2DataTable(strSql, Me.Repository)
+                If objDT.Rows.Count > 0 Then
+                    objElement = Me.Repository.GetElementByID(objDT.Rows(0).Item("object_id"))
+                Else
+                    objElement = Nothing
                 End If
-            End If
-        Catch ex As Exception
-            fouten += "Fout in FindElement" & ex.Message & vbCrLf
-
-        End Try
-        Return objElement
+            Catch ex As Exception
+                fouten += "Fout in FindElement" & ex.Message & vbCrLf
+            End Try
+            Return objElement
     End Function
 
     Public Function FindElement(ByVal name As String, ByVal stereotype As String) As EA.Element
         Dim objPack As EA.Package
         Dim objElement As EA.Element
 
-        Try
-            objPack = _Repository.GetTreeSelectedPackage()
-            Dim strSql As String
-            strSql = String.Format("SELECT object_id FROM t_object WHERE name = '{0}' AND stereotype = '{1}'", name, stereotype)
-            Dim objDS As DataSet
-            objDS = DLA2EAHelper.SQL2DataSet(strSql, Me.Repository)
-            If objDS.Tables.Count > 0 Then
-                If objDS.Tables(1).Rows.Count = 1 Then
-                    objElement = Me.Repository.GetElementByID(objDS.Tables(1).Rows(0).Item("object_id"))
+            Try
+                objPack = _Repository.GetTreeSelectedPackage()
+                Dim strSql As String
+                strSql = String.Format("SELECT object_id FROM t_object WHERE name = '{0}' AND stereotype = '{1}'", name, stereotype)
+                Dim objDT As DataTable
+                objDT = DLA2EAHelper.SQL2DataTable(strSql, Me.Repository)
+                If objDT.Rows.Count > 0 Then
+                    objElement = Me.Repository.GetElementByID(objDT.Rows(0).Item("object_id"))
+                Else
+                    objElement = Nothing
                 End If
-            End If
-        Catch ex As Exception
-            fouten += "Fout in FindElement" & ex.Message & vbCrLf
-
-        End Try
-        Return objElement
+            Catch ex As Exception
+                fouten += "Fout in FindElement" & ex.Message & vbCrLf
+            End Try
+            Return objElement
     End Function
 
     Public Function FindElementByAlias(ByVal name As String, ByVal stereotype As String) As EA.Element
         Dim objPack As EA.Package
         Dim objElement As EA.Element
 
-        Try
-            objPack = _Repository.GetTreeSelectedPackage()
-            Dim strSql As String
-            strSql = String.Format("SELECT object_id FROM t_object WHERE alias = '{0}' AND stereotype = '{1}'", name, stereotype)
-            Dim objDS As DataSet
-            objDS = DLA2EAHelper.SQL2DataSet(strSql, Me.Repository)
-            If objDS.Tables.Count > 0 Then
-                If objDS.Tables(1).Rows.Count = 1 Then
-                    objElement = Me.Repository.GetElementByID(objDS.Tables(1).Rows(0).Item("object_id"))
+            Try
+                objPack = _Repository.GetTreeSelectedPackage()
+                Dim strSql As String
+                strSql = String.Format("SELECT object_id FROM t_object WHERE alias = '{0}' AND stereotype = '{1}'", name, stereotype)
+                Dim objDT As DataTable
+                objDT = DLA2EAHelper.SQL2DataTable(strSql, Me.Repository)
+                If objDT.Rows.Count = 1 Then
+                    objElement = Me.Repository.GetElementByID(objDT.Rows(0).Item("object_id"))
                 End If
-            End If
-        Catch ex As Exception
-            fouten += "Fout in FindElementByAlias" & ex.Message & vbCrLf
+            Catch ex As Exception
+                fouten += "Fout in FindElementByAlias" & ex.Message & vbCrLf
         End Try
-
-        Return objElement
-    End Function
+            Return objElement
+        End Function
     Public Function AddConnector(ByVal Source As EA.Element, ByVal Target As EA.Element, ByVal stereotype As String) As EA.Connector
         Return Me.AddConnector(Source, Target, stereotype, "--")
     End Function
+        Public Function AddConnector(ByVal Source As EA.Element, ByVal Target As EA.Element, ByVal stereotype As String, ByVal Melding As String) As EA.Connector
+            Dim objPack As EA.Package
+            Dim objConnector As EA.Connector
+            Try
+                objPack = _Repository.GetTreeSelectedPackage()
+                objConnector = Source.Connectors.AddNew("", ConvertAssociationStereotype2Type(stereotype))
+                objConnector.SupplierID = Source.ElementID
+                objConnector.ClientID = Target.ElementID
+                objConnector.Stereotype = stereotype
+                objConnector.Direction = "Unspecified"
+                objConnector.Update()
+                Source.Update()
+                objPack.Update()
+            Catch ex As Exception
+                fouten += "Fout in AddConnector" & stereotype & ex.Message & vbCrLf
 
-
-    Public Function AddConnector(ByVal Source As EA.Element, ByVal Target As EA.Element, ByVal stereotype As String, ByVal Melding As String) As EA.Connector
-        Dim objPack As EA.Package
-        Dim objConnector As EA.Connector
-        Try
-            objPack = _Repository.GetTreeSelectedPackage()
-            objConnector = Source.Connectors.AddNew("", ConvertAssociationStereotype2Type(stereotype))
-            objConnector.SupplierID = Source.ElementID
-            objConnector.ClientID = Target.ElementID
-            objConnector.Stereotype = stereotype
-            objConnector.Direction = "Unspecified"
-            objConnector.Update()
-            Source.Update()
-            objPack.Update()
-        Catch ex As Exception
-            fouten += "Fout in AddConnector" & stereotype & ex.Message & vbCrLf
-
-        End Try
-        Return objConnector
-    End Function
-End Class
+            End Try
+            Return objConnector
+        End Function
+    End Class
 
 End Namespace

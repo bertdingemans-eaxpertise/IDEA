@@ -54,19 +54,17 @@ Public Class FrmIDEAClass
 
     End Sub
     Private Sub LoadAttributes()
-        Dim objDS As DataSet
+        Dim objDT As DataTable
         Dim strSql As String
         If Not IsNothing(Me.ComboBoxElement.SelectedValue) Then
             strSql = String.Format("SELECT id as attribute_id, name FROM t_attribute WHERE object_id = {0} ORDER BY name", Me.ComboBoxElement.SelectedValue)
-            objDS = DLA2EAHelper.SQL2DataSet(strSql, Me.Repository)
-            If objDS.Tables.Count > 1 Then
-                Me.ListBoxAttributes.DataSource = objDS.Tables(1)
+            objDT = DLA2EAHelper.SQL2DataTable(strSql, Me.Repository)
+            If objDT.Rows.Count > 0 Then
+                Me.ListBoxAttributes.DataSource = objDT
                 Me.ListBoxAttributes.DisplayMember = "name"
                 Me.ListBoxAttributes.ValueMember = "attribute_id"
             End If
         End If
-
-
     End Sub
 
 
@@ -93,7 +91,7 @@ Public Class FrmIDEAClass
         Me.ComboBoxExistingRefactor.Enabled = Me.RadioButtonExistingRefactor.Checked
     End Sub
     Sub LoadExistingItemListBox()
-        Dim objDS As DataSet
+        Dim objDT As DataTable
         If Me.ListBoxType.SelectedIndex > -1 Then
             Dim strSelected As String
             strSelected = Me.ListBoxType.Items(Me.ListBoxType.SelectedIndex).ToString()
@@ -101,20 +99,20 @@ Public Class FrmIDEAClass
             Me.ComboBoxExistingRefactor.DataSource = Nothing
             Select Case strSelected
                 Case "Interface", "Class"
-                    objDS = DLA2EAHelper.SQL2DataSet(String.Format("SELECT object_id, name, object_type FROM t_object WHERE object_type = '{0}' AND stereotype IS NULL ORDER BY name", strSelected), Me.Repository)
+                    objDT = DLA2EAHelper.SQL2DataTable(String.Format("SELECT object_id, name, object_type FROM t_object WHERE object_type = '{0}' AND stereotype IS NULL ORDER BY name", strSelected), Me.Repository)
                 Case "Table", "ArchiMate_DataObject", "ArchiMate_BusinessObject"
-                    objDS = DLA2EAHelper.SQL2DataSet(String.Format("SELECT object_id, name, object_type FROM t_object WHERE stereotype = '{0}' ORDER BY name", strSelected), Me.Repository)
+                    objDT = DLA2EAHelper.SQL2DataTable(String.Format("SELECT object_id, name, object_type FROM t_object WHERE stereotype = '{0}' ORDER BY name", strSelected), Me.Repository)
                 Case Else
-                    objDS = DLA2EAHelper.SQL2DataSet("SELECT object_id, name, object_type FROM t_object WHERE stereotype = 'XSDComplexType' ORDER BY name", Me.Repository)
+                    objDT = DLA2EAHelper.SQL2DataTable("SELECT object_id, name, object_type FROM t_object WHERE stereotype = 'XSDComplexType' ORDER BY name", Me.Repository)
             End Select
-            If objDS.Tables.Count > 1 Then
-                Me.ComboBoxExistingEntity.DataSource = objDS.Tables(1)
+            If objDT.Rows.Count > 0 Then
+                Me.ComboBoxExistingEntity.DataSource = objDT
                 Me.ComboBoxExistingEntity.DisplayMember = "name"
                 Me.ComboBoxExistingEntity.ValueMember = "object_id"
             End If
-            objDS = DLA2EAHelper.SQL2DataSet("SELECT t_object.object_id, t_object.name + ' ' + t_package.name as fullname FROM t_object, t_package WHERE t_object.package_id = t_package.package_id AND t_object.object_type = 'Class' AND t_object.stereotype IS NULL ORDER BY t_object.name ", Me.Repository)
-            If objDS.Tables.Count > 1 Then
-                Me.ComboBoxExistingRefactor.DataSource = objDS.Tables(1)
+            objDT = DLA2EAHelper.SQL2DataTable("SELECT t_object.object_id, t_object.name + ' ' + t_package.name as fullname FROM t_object, t_package WHERE t_object.package_id = t_package.package_id AND t_object.object_type = 'Class' AND t_object.stereotype IS NULL ORDER BY t_object.name ", Me.Repository)
+            If objDT.Rows.Count > 0 Then
+                Me.ComboBoxExistingRefactor.DataSource = objDT
                 Me.ComboBoxExistingRefactor.DisplayMember = "fullname"
                 Me.ComboBoxExistingRefactor.ValueMember = "object_id"
             End If
@@ -126,45 +124,49 @@ Public Class FrmIDEAClass
     End Sub
 
     Private Sub ButtonGenerate_Click(ByVal sender As Object, ByVal e As EventArgs) Handles ButtonGenerate.Click
-        If IsNothing(Me.ListBoxType.SelectedItem) Then
+        Dim objGenerator As New IDEAGenerator()
+        objGenerator.Repository = Me.Repository
+        If IsNothing(ListBoxType.SelectedItem) Then
             MsgBox("No targettype selected, select a target type first", MsgBoxStyle.OkOnly)
         Else
-            Dim item As DataRowView
-            Dim objNew As EA.Element
-
-            Dim objGenerator As New IDEAGenerator()
-            objGenerator.Repository = Me.Repository
-            If Me.RadioButtonNewEntity.Checked() Then
-                If Me.TextBoxNewEntity.Text.Length = 0 Then
-                    MsgBox("No new entity defined, New used for naming", MsgBoxStyle.OkOnly)
-                    Me.TextBoxNewEntity.Text = Me.Element.Name & "-" & Me.ListBoxType.SelectedItem.ToString()
-                End If
-                objNew = objGenerator.CreateElement(Me.TextBoxNewEntity.Text, Me.ListBoxType.SelectedItem.ToString(), Me.ComboBoxTargetPackage.SelectedValue)
+            If Me.ListBoxType.SelectedItem.ToString().ToUpper() = "USER-INTERFACE" Then
+                objGenerator.CopyClass2UI(Me.Element, Me.ComboBoxTargetPackage.SelectedValue, Me.CheckBoxAttributeAssociation.Checked)
             Else
-                objNew = Repository.GetElementByID(Me.ComboBoxExistingEntity.SelectedValue)
-            End If
-            For Each item In Me.ListBoxAttributes.CheckedItems
-                Dim objAttrib As EA.Attribute
-                objAttrib = objGenerator.CopyAttribute(Me.Element, objNew, Me.ListBoxType.SelectedItem.ToString().ToUpper(), item("attribute_id"), Me.CheckBoxAttributeAssociation.Checked)
-                If Me.CheckBoxAddAlias.Checked Then
-                    objAttrib.Alias = objAttrib.Name.Replace("_", " ")
-                    objAttrib.Alias = objAttrib.Alias.Substring(0, 1).ToUpper() + objAttrib.Alias.Substring(1).ToLower()
+                Dim item As DataRowView
+                Dim objNew As EA.Element
+
+                If Me.RadioButtonNewEntity.Checked() Then
+                    If Me.TextBoxNewEntity.Text.Length = 0 Then
+                        MsgBox("No new entity defined, New used for naming", MsgBoxStyle.OkOnly)
+                        Me.TextBoxNewEntity.Text = Me.Element.Name & "-" & Me.ListBoxType.SelectedItem.ToString()
+                    End If
+                    objNew = objGenerator.CreateElement(Me.TextBoxNewEntity.Text, Me.ListBoxType.SelectedItem.ToString(), Me.ComboBoxTargetPackage.SelectedValue)
+                Else
+                    objNew = Repository.GetElementByID(Me.ComboBoxExistingEntity.SelectedValue)
                 End If
-                If Me.CheckBoxControlType.Checked Then
-                    Dim oTV As EA.AttributeTag
-                    oTV = objAttrib.TaggedValues.AddNew("FormFactory_ControlType", "")
-                    oTV.Value = FormFactoryGenerator.Attribute2ControlType(objAttrib)
-                    oTV.Update()
+                For Each item In Me.ListBoxAttributes.CheckedItems
+                    Dim objAttrib As EA.Attribute
+                    objAttrib = objGenerator.CopyAttribute(Me.Element, objNew, Me.ListBoxType.SelectedItem.ToString().ToUpper(), item("attribute_id"), Me.CheckBoxAttributeAssociation.Checked)
+                    If Me.CheckBoxAddAlias.Checked Then
+                        objAttrib.Alias = objAttrib.Name.Replace("_", " ")
+                        objAttrib.Alias = objAttrib.Alias.Substring(0, 1).ToUpper() + objAttrib.Alias.Substring(1).ToLower()
+                    End If
+                    If Me.CheckBoxControlType.Checked Then
+                        Dim oTV As EA.AttributeTag
+                        oTV = objAttrib.TaggedValues.AddNew("FormFactory_ControlType", "")
+                        oTV.Value = FormFactoryGenerator.Attribute2ControlType(objAttrib)
+                        oTV.Update()
+                    End If
+                    If Me.CheckBoxOperator.Checked Then
+                        Dim oTV As EA.AttributeTag
+                        oTV = objAttrib.TaggedValues.AddNew("FormFactory_Operator", "")
+                        oTV.Update()
+                    End If
+                    objAttrib.Update()
+                Next
+                If Not Me.CheckBoxAttributeAssociation.Checked Then
+                    objGenerator.CreateTraceAssociation(Me.Element, objNew)
                 End If
-                If Me.CheckBoxOperator.Checked Then
-                    Dim oTV As EA.AttributeTag
-                    oTV = objAttrib.TaggedValues.AddNew("FormFactory_Operator", "")
-                    oTV.Update()
-                End If
-                objAttrib.Update()
-            Next
-            If Not Me.CheckBoxAttributeAssociation.Checked Then
-                objGenerator.CreateTraceAssociation(Me.Element, objNew)
             End If
             Me.Close()
         End If

@@ -1,5 +1,7 @@
 ﻿Namespace DLAFormfactory
-
+    ''' <summary>
+    ''' Report generator based on the sql statements used in the report generator screen (package helper)
+    ''' </summary>
     Public Class PDFCreator
         Private _Repository As EA.Repository
         Protected docGenerator As EA.DocumentGenerator
@@ -22,6 +24,9 @@
                 _Package = value
             End Set
         End Property
+        ''' <summary>
+        ''' Define the printing of empty notes
+        ''' </summary>
         Private _SuppressEmptyNotes As Boolean = False
         Public Property SuppressEmptyNotes() As Boolean
             Get
@@ -40,7 +45,6 @@
                 _OutputType = value
             End Set
         End Property
-
         Private _IncludeToC As Boolean
         Public Property IncludeToC() As Boolean
             Get
@@ -50,7 +54,6 @@
                 _IncludeToC = value
             End Set
         End Property
-
         Private _IncludeChildPackages As Boolean
 
         Public Sub New()
@@ -65,11 +68,15 @@
                 _IncludeChildPackages = value
             End Set
         End Property
-        Function MakePDFReport(FilePath As String)
+        ''' <summary>
+        ''' Main routine for calling the report generator and process the various elements based on the current package
+        ''' </summary>
+        ''' <param name="FilePath">File to create with the report content</param>
+        ''' <returns>Generation successfull</returns>
+        Function MakePDFReport(FilePath As String) As Boolean
             Dim saveSuccess As Boolean = False
             Dim generationSuccess As Boolean = False
             Me.docGenerator = Repository.CreateDocumentGenerator()
-
             ' Create a new document
             Try
                 If docGenerator.NewDocument("") = True Then
@@ -89,6 +96,13 @@
             End Try
             Return saveSuccess And generationSuccess
         End Function
+
+        ''' <summary>
+        ''' Process a package to generate a document from it.
+        ''' Please be aware that this is recursive when the checkbox is selected
+        ''' </summary>
+        ''' <param name="PackageId"></param>
+        ''' <returns></returns>
         Function Package2Report(PackageId As String)
             Dim generationSuccess As Boolean = False
             Try
@@ -117,6 +131,13 @@
             End Try
             Return generationSuccess
         End Function
+        ''' <summary>
+        ''' Create an element as report output
+        ''' This is currently specific for NS
+        ''' </summary>
+        ''' <param name="oDT"></param>
+        ''' <param name="diagram_name"></param>
+        ''' <returns></returns>
         Function Element2Report(oDT As DataTable, diagram_name As String) As Boolean
             Dim generationSuccess As Boolean = True
             Dim oRow As DataRow
@@ -165,6 +186,11 @@
 
             Return generationSuccess
         End Function
+        ''' <summary>
+        ''' Retrieve the diagram elements in the defined order (especially for reports that are designed left to right and top to bottom
+        ''' </summary>
+        ''' <param name="Diagram_id"></param>
+        ''' <returns></returns>
         Function Elements4Diagram(Diagram_id As String) As DataTable
             Dim strSql As String
             Try
@@ -179,7 +205,12 @@
             End Try
             Return New DataTable("Empty")
         End Function
-
+        ''' <summary>
+        ''' When you want to specify the order of the elements in a package in a different order, you can define it in the select statement
+        ''' Here the elements will be processed in this order
+        ''' </summary>
+        ''' <param name="Package_id"></param>
+        ''' <returns></returns>
         Function Elements4Package(Package_id As String) As DataTable
             Dim strSql As String
             Try
@@ -194,7 +225,12 @@
             End Try
             Return New DataTable("Empty")
         End Function
-
+        ''' <summary>
+        ''' When you want to process the diagrams in a package in a different order you can define it in the select statement 
+        ''' and process it here
+        ''' </summary>
+        ''' <param name="Package_id"></param>
+        ''' <returns></returns>
         Function Diagrams4Package(Package_id As String) As DataTable
             Dim strSql As String
             Try

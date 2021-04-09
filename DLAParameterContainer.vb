@@ -16,7 +16,6 @@ Namespace DLAFormfactory
         ''' <param name="strName"></param>
         ''' <param name="strValue"></param>
         ''' <remarks></remarks>
-        ''' 
         Public Sub AddParameter(ByVal strName As String, ByVal strValue As String)
             Me.AddParameter(strName, strValue, "string")
         End Sub

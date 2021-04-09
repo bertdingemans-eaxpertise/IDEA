@@ -45,8 +45,6 @@ Namespace DLAFormfactory
             _Repository = value
         End Set
     End Property
-
-
         ''' <summary>
         ''' Get duplicates based on the selected package
         ''' </summary>
@@ -63,24 +61,30 @@ Namespace DLAFormfactory
                 ProgressBar.PerformStep()
             Next
         End Sub
+        ''' <summary>
+        ''' Deduplicate connectors in the package
+        ''' </summary>
+        ''' <param name="oPackage">Root package</param>
+        ''' <param name="DuplicatePackageId">Move the duplicates to a duplicates packages</param>
+        ''' <param name="ProgressBar">Progress Bar</param>
+        ''' <param name="oConDT">Datatable with duplicate connectors</param>
         Public Sub DeDuplicateConnectors(ByVal oPackage As EA.Package, ByVal DuplicatePackageId As String, ProgressBar As System.Windows.Forms.ProgressBar, oConDT As DataTable)
-        ProgressBar.Value = 0
-        ProgressBar.Minimum = 0
+            ProgressBar.Value = 0
+            ProgressBar.Minimum = 0
             ProgressBar.Maximum = oConDT.Rows.Count
             ProgressBar.Step = 1
-
             If Me.HasModule("DeduplicateConnector") Then
-            Dim strOrigIds As String = ""
-            For Each oDR In oConDT.Rows
-                strOrigIds += " " + oDR.Item("origid")
-                If Not strOrigIds.Contains(oDR.Item("duplid")) Then
-                    DeduplicateConnector(oDR.Item("origid"), oDR.Item("duplid"), oPackage.PackageID, DuplicatePackageId)
-                End If
+                Dim strOrigIds As String = ""
+                For Each oDR In oConDT.Rows
+                    strOrigIds += " " + oDR.Item("origid")
+                    If Not strOrigIds.Contains(oDR.Item("duplid")) Then
+                        DeduplicateConnector(oDR.Item("origid"), oDR.Item("duplid"), oPackage.PackageID, DuplicatePackageId)
+                    End If
                     ProgressBar.PerformStep()
                 Next
-        End If
-        'process the sub packages too when checked based on recursion
-    End Sub
+            End If
+            'process the sub packages too when checked based on recursion
+        End Sub
 
         ''' <summary>
         ''' Deduplicate two elements in which you merge a number of child elements from the duplicate to the original
@@ -92,7 +96,6 @@ Namespace DLAFormfactory
             Dim objElement As EA.Element
             Dim objElementLeft As EA.Element
             Dim objTaggedValue As EA.TaggedValue
-
             Try
                 ' suppress validation warnings for convenience of batch process
                 My.Settings.SuppresWarningDialog = True
@@ -163,7 +166,6 @@ Namespace DLAFormfactory
                 'turn back on the warnings
                 My.Settings.SuppresWarningDialog = False
                 My.Settings.Save()
-
             Catch ex As Exception
                 Repository.WriteOutput("IDEA", ex.ToString(), 0)
             End Try
@@ -181,32 +183,30 @@ Namespace DLAFormfactory
         Dim objConnector As EA.Connector
         Dim objConnectorLeft As EA.Connector
         Dim objTaggedValue As EA.ConnectorTag
-
-        Try
-            ' suppress validation warnings for convenience of batch process
-            My.Settings.SuppresWarningDialog = True
-            My.Settings.Save()
-            objConnector = Me.Repository.GetConnectorByID(strDuplicateID)
-            objConnectorLeft = Me.Repository.GetConnectorByID(strOriginalID)
-            If Me.HasModule("Notes") And objConnectorLeft.Notes <> objConnector.Notes Then
-                objConnectorLeft.Notes += vbCrLf + vbCrLf + objConnector.Notes
-                objConnectorLeft.Update()
-            End If
-            Me.Repository.Execute("UPDATE t_diagramlinks SET connectorid =" + strOriginalID + " WHERE connectorid = " + strDuplicateID)
-            If Me.HasModule("TaggedValues") Then
-                For Each objTaggedValue In objConnector.TaggedValues
-                    objTaggedValue.ConnectorID = strOriginalID
-                    objTaggedValue.Update()
-                Next
-            End If
-            Me.Repository.Execute("DELETE FROM t_connector WHERE connector_id = " + strDuplicateID)
-
-            'turn back on the warnings
-            My.Settings.SuppresWarningDialog = False
-            My.Settings.Save()
-            Me.Repository.RefreshModelView(Convert.ToInt32(strPackageID))
-        Catch ex As Exception
-            Repository.WriteOutput("IDEA", ex.ToString(), 0)
+            Try
+                ' suppress validation warnings for convenience of batch process
+                My.Settings.SuppresWarningDialog = True
+                My.Settings.Save()
+                objConnector = Me.Repository.GetConnectorByID(strDuplicateID)
+                objConnectorLeft = Me.Repository.GetConnectorByID(strOriginalID)
+                If Me.HasModule("Notes") And objConnectorLeft.Notes <> objConnector.Notes Then
+                    objConnectorLeft.Notes += vbCrLf + vbCrLf + objConnector.Notes
+                    objConnectorLeft.Update()
+                End If
+                Me.Repository.Execute("UPDATE t_diagramlinks SET connectorid =" + strOriginalID + " WHERE connectorid = " + strDuplicateID)
+                If Me.HasModule("TaggedValues") Then
+                    For Each objTaggedValue In objConnector.TaggedValues
+                        objTaggedValue.ConnectorID = strOriginalID
+                        objTaggedValue.Update()
+                    Next
+                End If
+                Me.Repository.Execute("DELETE FROM t_connector WHERE connector_id = " + strDuplicateID)
+                'turn back on the warnings
+                My.Settings.SuppresWarningDialog = False
+                My.Settings.Save()
+                Me.Repository.RefreshModelView(Convert.ToInt32(strPackageID))
+            Catch ex As Exception
+                Repository.WriteOutput("IDEA", ex.ToString(), 0)
         End Try
     End Sub
 End Class
